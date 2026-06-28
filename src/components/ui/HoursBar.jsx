@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { cn } from '../../utils/cn'
 import { getHoursClasses, getHoursPercent } from '../../utils/hoursColor'
 import { getHoursStatus, HOURS_ALERTS } from '../../constants/hoursThresholds'
@@ -67,4 +68,4 @@ const HoursBar = ({
   )
 }
 
-export default HoursBar
+export default memo(HoursBar)

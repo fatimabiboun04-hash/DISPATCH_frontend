@@ -1,12 +1,7 @@
+import { memo } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
-/**
- * Pagination — aligned with Laravel's paginated response shape:
- * { current_page, last_page, per_page, total }
- *
- * Backend returns: res.data.meta.current_page / last_page
- */
 const Pagination = ({
   currentPage,
   lastPage,
@@ -20,10 +15,9 @@ const Pagination = ({
   const from = (currentPage - 1) * perPage + 1
   const to   = Math.min(currentPage * perPage, total)
 
-  // Build page number array with ellipsis
   const getPages = () => {
     const pages = []
-    const delta = 1 // pages around current
+    const delta = 1
     for (let i = 1; i <= lastPage; i++) {
       if (
         i === 1 || i === lastPage ||
@@ -38,20 +32,23 @@ const Pagination = ({
   }
 
   return (
-    <div className={cn(
-      'flex items-center justify-between',
-      className
-    )}>
-      {/* Count */}
+    <nav
+      role="navigation"
+      aria-label="Pagination"
+      className={cn(
+        'flex items-center justify-between',
+        className
+      )}
+    >
       <p className="text-xs text-slate-400">
         {from}–{to} sur {total} résultats
       </p>
 
-      {/* Controls */}
       <div className="flex items-center gap-1">
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
+          aria-label="Page précédente"
           className="flex h-8 w-8 items-center justify-center rounded-lg
                      text-slate-500 transition-colors hover:bg-surface-100
                      disabled:opacity-30 disabled:cursor-not-allowed
@@ -71,6 +68,8 @@ const Pagination = ({
             <button
               key={page}
               onClick={() => onPageChange(page)}
+              aria-current={page === currentPage ? 'page' : undefined}
+              aria-label={`Page ${page}`}
               className={cn(
                 'flex h-8 w-8 items-center justify-center rounded-lg text-xs font-medium',
                 'transition-colors duration-150',
@@ -87,6 +86,7 @@ const Pagination = ({
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === lastPage}
+          aria-label="Page suivante"
           className="flex h-8 w-8 items-center justify-center rounded-lg
                      text-slate-500 transition-colors hover:bg-surface-100
                      disabled:opacity-30 disabled:cursor-not-allowed
@@ -95,8 +95,8 @@ const Pagination = ({
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>
-    </div>
+    </nav>
   )
 }
 
-export default Pagination
+export default memo(Pagination)

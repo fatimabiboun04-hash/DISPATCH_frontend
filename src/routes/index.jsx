@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Suspense, lazy } from 'react'
 import ProtectedRoute from './ProtectedRoute'
 import RoleGuard from './RoleGuard'
+import ErrorBoundary from '../components/ui/ErrorBoundary'
 
 /**
  * All pages are lazy-loaded for code splitting.
@@ -25,6 +26,8 @@ const AdminSettings     = lazy(() => import('../pages/admin/SettingsPage'))
 const AdminDevices      = lazy(() => import('../pages/admin/DevicesPage'))
 const EmployeeProfile   = lazy(() => import('../pages/admin/EmployeeProfilePage'))
 const AdminPointageLive = lazy(() => import('../pages/admin/PointageLivePage'))
+const AdminTasks        = lazy(() => import('../pages/admin/TasksPage'))
+const AdminSkills       = lazy(() => import('../pages/admin/SkillsPage'))
 // ── Employee ─────────────────────────────────────────────────
 const EmpDashboard      = lazy(() => import('../pages/employee/DashboardPage'))
 const EmpPlanning       = lazy(() => import('../pages/employee/MyPlanningPage'))
@@ -32,6 +35,7 @@ const EmpPointage       = lazy(() => import('../pages/employee/MyPointagePage'))
 const EmpLeave          = lazy(() => import('../pages/employee/MyLeaveRequestsPage'))
 const EmpHistory        = lazy(() => import('../pages/employee/MyHistoryPage'))
 const EmpProfile        = lazy(() => import('../pages/employee/MyProfilePage'))
+const EmpTasks          = lazy(() => import('../pages/employee/MyTasksPage'))
 
 // ── Layouts ──────────────────────────────────────────────────
 const AdminLayout    = lazy(() => import('../layouts/AdminLayout'))
@@ -49,7 +53,8 @@ const PageLoader = () => (
 
 const AppRouter = () => (
   <BrowserRouter>
-    <Suspense fallback={<PageLoader />}>
+    <ErrorBoundary>
+      <Suspense fallback={<PageLoader />}>
       <Routes>
 
         {/* ── Public ── */}
@@ -80,6 +85,8 @@ const AppRouter = () => (
           <Route path="settings"      element={<AdminSettings />} />
           <Route path="devices"       element={<AdminDevices />} />
           <Route path="pointage-live" element={<AdminPointageLive />} />
+          <Route path="tasks"        element={<AdminTasks />} />
+          <Route path="skills"       element={<AdminSkills />} />
         </Route>
 
         {/* ── Employee ── */}
@@ -100,6 +107,7 @@ const AppRouter = () => (
           <Route path="my-leave-requests" element={<EmpLeave />} />
           <Route path="my-history"       element={<EmpHistory />} />
           <Route path="my-profile"       element={<EmpProfile />} />
+          <Route path="my-tasks"        element={<EmpTasks />} />
         </Route>
 
         {/* ── 404 fallback ── */}
@@ -107,6 +115,7 @@ const AppRouter = () => (
 
       </Routes>
     </Suspense>
+    </ErrorBoundary>
   </BrowserRouter>
 )
 

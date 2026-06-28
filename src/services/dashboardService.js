@@ -47,6 +47,15 @@ const dashboardService = {
     const res = await axiosInstance.get(API.DASHBOARD.ACTIVE_PAUSES)
     return res.data.data
   },
+
+  /**
+   * GET /v1/dashboard/weekly-history
+   * Returns: array of weekly snapshot objects
+   */
+  getWeeklyHistory: async () => {
+    const res = await axiosInstance.get(API.DASHBOARD.WEEKLY_HISTORY)
+    return res.data.data
+  },
 }
 
 export default dashboardService

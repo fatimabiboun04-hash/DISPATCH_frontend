@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { cn } from '../../utils/cn'
@@ -12,7 +13,7 @@ import Skeleton from './Skeleton'
  * Backend source: GET /v1/dashboard/stats
  */
 
-const AnimatedCounter = ({ value }) => {
+const AnimatedCounter = memo(({ value }) => {
   // Simple display — real animation handled by Framer Motion counter-up
   return (
     <motion.span
@@ -24,7 +25,7 @@ const AnimatedCounter = ({ value }) => {
       {value}
     </motion.span>
   )
-}
+})
 
 const StatCard = ({
   label,
@@ -102,4 +103,4 @@ const StatCard = ({
   )
 }
 
-export default StatCard
+export default memo(StatCard)

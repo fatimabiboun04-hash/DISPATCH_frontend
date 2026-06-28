@@ -28,10 +28,9 @@ const notificationSlice = createSlice({
     },
     // Optimistically mark all read
     markAllReadLocal: (state) => {
-      state.items       = state.items.map((n) => ({
-        ...n,
-        read_at: n.read_at || new Date().toISOString(),
-      }))
+      state.items.forEach((n) => {
+        if (!n.read_at) n.read_at = new Date().toISOString()
+      })
       state.unreadCount = 0
     },
   },
@@ -53,25 +52,45 @@ const notificationSlice = createSlice({
       })
 
     // ── Fetch unread count ───────────────────────────────
-    builder.addCase(fetchUnreadCountThunk.fulfilled, (state, action) => {
-      state.unreadCount = action.payload
-    })
+    builder
+      .addCase(fetchUnreadCountThunk.pending, (state) => {
+        // no loading indicator needed for the badge count
+      })
+      .addCase(fetchUnreadCountThunk.fulfilled, (state, action) => {
+        state.unreadCount = action.payload
+      })
+      .addCase(fetchUnreadCountThunk.rejected, (state) => {
+        state.unreadCount = 0
+      })
 
     // ── Mark one read ────────────────────────────────────
-    builder.addCase(markReadThunk.fulfilled, (state, action) => {
-      const item = state.items.find((n) => n.id === action.payload)
-      if (item) item.read_at = new Date().toISOString()
-      state.unreadCount = Math.max(0, state.unreadCount - 1)
-    })
+    builder
+      .addCase(markReadThunk.pending, (state) => {
+        // optimistic update already applied via markOneRead reducer
+      })
+      .addCase(markReadThunk.fulfilled, (state, action) => {
+        const item = state.items.find((n) => n.id === action.payload)
+        if (item) item.read_at = new Date().toISOString()
+        state.unreadCount = Math.max(0, state.unreadCount - 1)
+      })
+      .addCase(markReadThunk.rejected, (state) => {
+        // If API fails, the optimistic update stays. User can retry.
+      })
 
     // ── Mark all read ────────────────────────────────────
-    builder.addCase(markAllReadThunk.fulfilled, (state) => {
-      state.items       = state.items.map((n) => ({
-        ...n,
-        read_at: n.read_at || new Date().toISOString(),
-      }))
-      state.unreadCount = 0
-    })
+    builder
+      .addCase(markAllReadThunk.pending, (state) => {
+        // optimistic update already applied via markAllReadLocal reducer
+      })
+      .addCase(markAllReadThunk.fulfilled, (state) => {
+        state.items.forEach((n) => {
+          if (!n.read_at) n.read_at = new Date().toISOString()
+        })
+        state.unreadCount = 0
+      })
+      .addCase(markAllReadThunk.rejected, (state) => {
+        // If API fails, the optimistic update stays. User can retry.
+      })
   },
 })
 

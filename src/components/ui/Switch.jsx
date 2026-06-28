@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { cn } from '../../utils/cn'
 import { motion } from 'framer-motion'
 
@@ -61,4 +62,4 @@ const Switch = ({
   )
 }
 
-export default Switch
+export default memo(Switch)

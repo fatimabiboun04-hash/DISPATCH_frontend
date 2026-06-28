@@ -11,9 +11,10 @@ import {
 import {
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { updatePlanningThunk } from '../../features/planning/planningThunks'
 import { clearConflictErrors } from '../../features/planning/planningSlice'
+import { selectPlanningData } from '../../features/planning/planningSelectors'
 import toast from 'react-hot-toast'
 
 /**
@@ -32,8 +33,9 @@ import toast from 'react-hot-toast'
  * droppableId convention: day date string 'YYYY-MM-DD'
  * draggableId convention: planning.id (number as string)
  */
-const DragDropWrapper = ({ children, plannings = [], onRefresh }) => {
+const DragDropWrapper = ({ children, onRefresh }) => {
   const dispatch    = useDispatch()
+  const plannings   = useSelector(selectPlanningData)
   const [activeId, setActiveId] = useState(null)
 
   const sensors = useSensors(

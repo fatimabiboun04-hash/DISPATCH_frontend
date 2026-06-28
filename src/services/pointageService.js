@@ -27,8 +27,9 @@ const pointageService = {
       formData.append('selfie', selfie)
     }
 
+    const deviceName = `${navigator.platform || 'Unknown'} - ${navigator.userAgent?.slice(0, 40) || 'Browser'}`
     const res = await axiosInstance.post(API.POINTAGE.CHECK_IN, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: { 'Content-Type': 'multipart/form-data', 'X-Device-Name': deviceName },
     })
     return res.data.data
   },
@@ -88,6 +89,13 @@ const pointageService = {
    */
   getReplacementSuggestion: async (planningId) => {
     const res = await axiosInstance.get(API.POINTAGE.REPLACEMENT(planningId))
+    return res.data.data
+  },
+
+  assignReplacement: async (planningId, replacementUserId) => {
+    const res = await axiosInstance.post(API.POINTAGE.ASSIGN_REPLACEMENT(planningId), {
+      replacement_user_id: replacementUserId,
+    })
     return res.data.data
   },
 }

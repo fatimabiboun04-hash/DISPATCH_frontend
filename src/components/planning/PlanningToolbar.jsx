@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Lock, Zap, RefreshCw, CheckCircle, AlertTriangle,
+  Lock, Zap, RefreshCw, CheckCircle, Save, BarChart3,
 } from 'lucide-react'
 import {
   lockCurrentWeekThunk,
@@ -16,6 +16,7 @@ import {
 } from '../../features/planning/planningSelectors'
 import { clearGenerateResult } from '../../features/planning/planningSlice'
 import WeekSelector  from './WeekSelector'
+import TemplateModal from './TemplateModal'
 import { Button, ConfirmDialog } from '../ui'
 import toast         from 'react-hot-toast'
 import { cn }        from '../../utils/cn'
@@ -39,6 +40,10 @@ const PlanningToolbar = ({
   onToday,
   isCurrentWeek,
   onRefresh,
+  weekNumber,
+  year,
+  onStatsToggle,
+  statsOpen,
   className,
 }) => {
   const dispatch         = useDispatch()
@@ -49,12 +54,10 @@ const PlanningToolbar = ({
 
   const [lockConfirmOpen,     setLockConfirmOpen]     = useState(false)
   const [generateConfirmOpen, setGenerateConfirmOpen] = useState(false)
-  const [locking,             setLocking]             = useState(false)
+  const [templateOpen,        setTemplateOpen]        = useState(false)
 
   const handleLockConfirm = async () => {
-    setLocking(true)
     const result = await dispatch(lockCurrentWeekThunk())
-    setLocking(false)
     setLockConfirmOpen(false)
     if (lockCurrentWeekThunk.fulfilled.match(result)) {
       toast.success(
@@ -109,6 +112,24 @@ const PlanningToolbar = ({
           <Button
             variant="secondary"
             size="sm"
+            leftIcon={<BarChart3 className="h-3.5 w-3.5" />}
+            onClick={onStatsToggle}
+          >
+            {statsOpen ? 'Masquer stats' : 'Statistiques'}
+          </Button>
+
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={<Save className="h-3.5 w-3.5" />}
+            onClick={() => setTemplateOpen(true)}
+          >
+            Templates
+          </Button>
+
+          <Button
+            variant="secondary"
+            size="sm"
             leftIcon={<Lock className="h-3.5 w-3.5" />}
             loading={lockLoading}
             onClick={() => setLockConfirmOpen(true)}
@@ -126,6 +147,17 @@ const PlanningToolbar = ({
           </Button>
         </div>
       </div>
+
+      {/* Template modal */}
+      {templateOpen && (
+        <TemplateModal
+          open={templateOpen}
+          onClose={() => setTemplateOpen(false)}
+          weekNumber={weekNumber}
+          year={year}
+          onTemplateLoaded={onRefresh}
+        />
+      )}
 
       {/* Generate result banner */}
       <AnimatePresence>
@@ -169,7 +201,7 @@ const PlanningToolbar = ({
         open={lockConfirmOpen}
         onClose={() => setLockConfirmOpen(false)}
         onConfirm={handleLockConfirm}
-        loading={locking}
+        loading={lockLoading}
         variant="warning"
         title="Verrouiller la semaine courante"
         description="Le planning de la semaine courante sera verrouillé. Les modifications ne seront plus possibles sans déblocage explicite. Continuer ?"

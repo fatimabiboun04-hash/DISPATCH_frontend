@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { Camera, X }        from 'lucide-react'
-import { Avatar }           from '../ui'
+import { Avatar }           from '../../components/ui'
 import { cn }               from '../../utils/cn'
 
 /**

@@ -13,7 +13,7 @@ import {
   selectEmployeeSubmitError,
 } from '../../features/employees/employeeSelectors'
 import { clearSubmitError } from '../../features/employees/employeeSlice'
-import { Modal, Input, Select, Button, FormField, SkillBadge } from '../ui'
+import { Modal, Input, Select, Button, FormField } from '../ui'
 import { cn } from '../../utils/cn'
 import toast from 'react-hot-toast'
 

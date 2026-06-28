@@ -10,13 +10,9 @@ import { cn }              from '../../utils/cn'
  *
  * Data shape from POST /v1/planning/suggest:
  * {
- *   employee: { id, name, initials, avatar },  ← avatar is raw path, NOT avatar_url
+ *   employee: { id, name, initials, avatar_url },
  *   current_hours, weekly_limit, rating, match_percentage
  * }
- *
- * IMPORTANT: employee.avatar is a raw storage path (not a full URL).
- * The Avatar component handles this via src fallback to initials.
- * We pass employee.initials as the name prop to generate the correct gradient.
  */
 const SmartSuggestionItem = ({
   suggestion,
@@ -26,12 +22,6 @@ const SmartSuggestionItem = ({
 }) => {
   const { employee, current_hours, weekly_limit, rating, match_percentage } = suggestion
   const hoursClasses = getHoursClasses(current_hours)
-
-  // Build avatar URL if raw path exists
-  // Backend stores as 'avatars/filename.jpg' — needs storage URL prefix
-  const avatarUrl = employee.avatar
-    ? `${import.meta.env.VITE_API_URL?.replace('/api', '')}/storage/${employee.avatar}`
-    : null
 
   // Match percentage color
   const matchColor =
@@ -55,7 +45,7 @@ const SmartSuggestionItem = ({
     >
       {/* Avatar */}
       <Avatar
-        src={avatarUrl}
+        src={employee.avatar_url}
         name={employee.name}
         size="sm"
       />

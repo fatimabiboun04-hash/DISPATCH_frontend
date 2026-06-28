@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
 import Button from './Button'
 import { cn } from '../../utils/cn'
@@ -38,4 +39,4 @@ const ErrorState = ({
   </div>
 )
 
-export default ErrorState
+export default memo(ErrorState)

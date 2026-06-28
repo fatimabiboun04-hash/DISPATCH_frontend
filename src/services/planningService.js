@@ -101,6 +101,43 @@ const planningService = {
     })
     return res.data.data
   },
+
+  /**
+   * POST /v1/planning/{id}/lock
+   * Locks a single planning assignment.
+   * Returns updated planning record
+   */
+  lockPlanning: async (id) => {
+    const res = await axiosInstance.post(API.PLANNING.LOCK(id))
+    return res.data.data
+  },
+
+  // ── BATCH OPERATIONS ──
+
+  batchDelete: async (planningIds) => {
+    const res = await axiosInstance.post(API.PLANNING.BATCH_DELETE, { planning_ids: planningIds })
+    return res.data.data
+  },
+
+  batchUpdateShift: async ({ planning_ids, shift_id }) => {
+    const res = await axiosInstance.post(API.PLANNING.BATCH_UPDATE_SHIFT, { planning_ids, shift_id })
+    return res.data.data
+  },
+
+  batchAssignEmployee: async ({ planning_ids, user_id }) => {
+    const res = await axiosInstance.post(API.PLANNING.BATCH_ASSIGN_EMPLOYEE, { planning_ids, user_id })
+    return res.data.data
+  },
+
+  duplicateDay: async ({ source_date, target_date }) => {
+    const res = await axiosInstance.post(API.PLANNING.BATCH_DUPLICATE_DAY, { source_date, target_date })
+    return res.data.data
+  },
+
+  validateBatch: async (items) => {
+    const res = await axiosInstance.post(API.PLANNING.BATCH_VALIDATE, { items })
+    return res.data.data
+  },
 }
 
 export default planningService

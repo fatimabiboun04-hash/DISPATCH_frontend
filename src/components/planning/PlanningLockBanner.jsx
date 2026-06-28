@@ -1,9 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { Lock, Unlock, AlertTriangle } from 'lucide-react'
-import { useDispatch, useSelector } from 'react-redux'
-import { overrideLockThunk } from '../../features/planning/planningThunks'
+import { Lock } from 'lucide-react'
+import { useSelector } from 'react-redux'
 import { selectHasLockedRecords, selectLockedCount } from '../../features/planning/planningSelectors'
-import { Button } from '../ui'
 import { cn } from '../../utils/cn'
 
 /**
@@ -16,7 +14,6 @@ import { cn } from '../../utils/cn'
  * with the specific planning_id.
  */
 const PlanningLockBanner = ({ className }) => {
-  const dispatch   = useDispatch()
   const hasLocked  = useSelector(selectHasLockedRecords)
   const count      = useSelector(selectLockedCount)
 

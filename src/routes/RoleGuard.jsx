@@ -12,8 +12,9 @@ import { ROLE_HOME } from '../constants/roles'
  *   </RoleGuard>
  */
 const RoleGuard = ({ children, requiredRole }) => {
-  const raw  = localStorage.getItem('dispatch_user')
-  const user = raw ? JSON.parse(raw) : null
+  const raw = localStorage.getItem('dispatch_user')
+  let user = null
+  try { user = raw ? JSON.parse(raw) : null } catch { user = null }
 
   if (!user) {
     return <Navigate to="/" replace />

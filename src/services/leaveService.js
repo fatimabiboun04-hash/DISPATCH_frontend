@@ -42,10 +42,18 @@ const leaveService = {
 
   /**
    * POST /v1/leave-requests/{id}/approve (admin)
-   * No body.
+   *
+   * New behavior:
+   * - If employee has planning conflicts, returns 422 with requires_force
+   * - Second call with { force: true } removes planning and approves
+   *
+   * On success returns: { leave_request, planning_removed, replacement_suggestions }
+   * On conflict returns 422 with: { has_conflicts, requires_force, conflicts, conflict_count }
    */
-  approve: async (id) => {
-    const res = await axiosInstance.post(API.LEAVE.APPROVE(id))
+  approve: async (id, options = {}) => {
+    const body = {}
+    if (options.force) body.force = true
+    const res = await axiosInstance.post(API.LEAVE.APPROVE(id), body)
     return res.data.data
   },
 

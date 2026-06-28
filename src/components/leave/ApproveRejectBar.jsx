@@ -2,27 +2,57 @@ import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { CheckCircle, XCircle } from 'lucide-react'
 import { approveLeaveThunk } from '../../features/leave/leaveThunks'
-import { selectLeaveActionLoading } from '../../features/leave/leaveSelectors'
+import {
+  selectLeaveActionLoading,
+  selectApproveConflict,
+} from '../../features/leave/leaveSelectors'
+import { clearApproveConflict } from '../../features/leave/leaveSlice'
+import ConflictWarningDialog from './ConflictWarningDialog'
 import RejectReasonModal from './RejectReasonModal'
 import { Button, Tooltip } from '../ui'
 import toast from 'react-hot-toast'
 
 /**
  * ApproveRejectBar — inline approve + reject buttons for admin.
- * Only shown when leave.status === 'pending'.
- * Reject requires a reason (backend validation).
+ *
+ * Flow:
+ * 1. Click approve → dispatches without force
+ * 2. If backend detects planning conflicts → shows ConflictWarningDialog
+ * 3. Admin confirms → dispatches with force=true → planning removed
+ * 4. Replacement suggestions appear at the page level (LeaveRequestsPage)
  */
 const ApproveRejectBar = ({ leave }) => {
-  const dispatch     = useDispatch()
-  const actionLoading= useSelector(selectLeaveActionLoading)
-  const isLoading    = actionLoading[leave.id] || false
+  const dispatch       = useDispatch()
+  const actionLoading  = useSelector(selectLeaveActionLoading)
+  const approveConflict = useSelector(selectApproveConflict)
+  const isLoading      = actionLoading[leave.id] || false
 
   const [rejectOpen, setRejectOpen] = useState(false)
 
+  // Conflict dialog for this specific leave
+  const hasConflict = approveConflict?.leaveId === leave.id
+  const conflictCount = approveConflict?.conflict_count || 0
+  const conflicts = approveConflict?.conflicts || []
+
   const handleApprove = async () => {
-    const result = await dispatch(approveLeaveThunk(leave.id))
+    // First click: try without force
+    const result = await dispatch(approveLeaveThunk({ id: leave.id, force: false }))
+    // If fulfilled (no conflicts), show success
     if (approveLeaveThunk.fulfilled.match(result)) {
       toast.success(`Congé approuvé pour ${leave.user?.name}`)
+      if (result.payload?.planning_removed > 0) {
+        toast.success(`${result.payload.planning_removed} planning(s) retiré(s)`)
+      }
+    }
+    // If rejected due to conflict, dialog shows automatically via Redux
+  }
+
+  const handleForceApprove = async () => {
+    // Second click: force approve (removes planning)
+    const result = await dispatch(approveLeaveThunk({ id: leave.id, force: true }))
+    dispatch(clearApproveConflict())
+    if (approveLeaveThunk.fulfilled.match(result)) {
+      toast.success(`Congé approuvé — ${result.payload?.planning_removed || 0} planning(s) retiré(s)`)
     } else {
       toast.error('Erreur lors de l\'approbation')
     }
@@ -60,6 +90,17 @@ const ApproveRejectBar = ({ leave }) => {
           </Button>
         </Tooltip>
       </div>
+
+      {/* Conflict warning dialog */}
+      <ConflictWarningDialog
+        open={hasConflict}
+        onClose={() => dispatch(clearApproveConflict())}
+        onConfirm={handleForceApprove}
+        conflicts={conflicts}
+        conflictCount={conflictCount}
+        loading={isLoading}
+        employeeName={leave.user?.name || ''}
+      />
 
       <RejectReasonModal
         open={rejectOpen}

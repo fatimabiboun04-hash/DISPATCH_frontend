@@ -123,11 +123,9 @@ const PlanningCard = ({
         {/* User info */}
         <UserAvatarRow
           users={[{
-            id:              planning.user?.id,
-            name:            planning.user?.name || '—',
-            avatar_url:      planning.user?.avatar_url,
-            // pointage_status comes from live data — not in planning record
-            pointage_status: planning.user?.pointage_status || 'pending',
+            id:         planning.user?.id,
+            name:       planning.user?.name || '—',
+            avatar_url: planning.user?.avatar_url,
           }]}
           max={1}
           size="xs"

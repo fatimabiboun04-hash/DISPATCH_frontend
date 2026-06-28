@@ -96,7 +96,7 @@ const ShiftsPage = () => {
       >
         <div>
           <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-            Shifts
+            Types de shift
           </h1>
           <p className="mt-0.5 text-sm text-slate-400">
             {activeShifts.length} shift{activeShifts.length !== 1 ? 's' : ''} actif{activeShifts.length !== 1 ? 's' : ''}

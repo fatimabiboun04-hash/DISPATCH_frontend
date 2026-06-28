@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useDispatch }         from 'react-redux'
 import { motion }              from 'framer-motion'
 import { useAuth }             from '../../hooks/useAuth'
@@ -14,12 +14,11 @@ import {
   selectTodayPointage,
   selectIsCheckedIn,
 } from '../../features/pointage/pointageSelectors'
-import { selectMyLeaveList }   from '../../features/leave/leaveSelectors'
-import { Card, Badge, HoursBar, Skeleton, Avatar, RatingBadge, SkillBadge } from '../../components/ui'
-import { getShiftColor }       from '../../constants/shiftColors'
+import { selectPendingLeaveCount } from '../../features/leave/leaveSelectors'
+import { Card, Badge, HoursBar, Skeleton, Avatar, RatingBadge, SkillBadge, ErrorState } from '../../components/ui'
 import { formatTime, formatDate } from '../../utils/formatters'
 import { getHoursClasses }     from '../../utils/hoursColor'
-import { Clock, Calendar, FileText, TrendingUp, Zap } from 'lucide-react'
+import { Clock, FileText, Zap } from 'lucide-react'
 import { cn }                  from '../../utils/cn'
 
 /**
@@ -44,39 +43,52 @@ const DashboardPage = () => {
   const { user }       = useAuth()
   const todayPointage  = useSelector(selectTodayPointage)
   const isCheckedIn    = useSelector(selectIsCheckedIn)
-  const leaveList      = useSelector(selectMyLeaveList)
 
   const [profile,  setProfile]  = useState(null)
   const [loading,  setLoading]  = useState(true)
+  const [fetchError, setFetchError] = useState(null)
+
+  const fetchAll = useCallback(async () => {
+    setLoading(true)
+    setFetchError(null)
+    try {
+      const [profileData] = await Promise.all([
+        profileService.getProfile(),
+        dispatch(fetchMyPointagesThunk({})),
+        dispatch(fetchMyLeaveRequestsThunk({})),
+      ])
+      setProfile(profileData)
+    } catch (err) {
+      setFetchError(err?.message || 'Impossible de charger les données')
+    } finally {
+      setLoading(false)
+    }
+  }, [dispatch])
 
   useEffect(() => {
-    const fetchAll = async () => {
-      setLoading(true)
-      try {
-        const [profileData] = await Promise.all([
-          profileService.getProfile(),
-          dispatch(fetchMyPointagesThunk({})),
-          dispatch(fetchMyLeaveRequestsThunk({})),
-        ])
-        setProfile(profileData)
-      } catch {}
-      finally { setLoading(false) }
-    }
     fetchAll()
-  }, [dispatch])
+  }, [fetchAll])
 
   const stats        = profile?.stats
   const currentRating= profile?.current_rating
   const userData     = profile?.profile || user
-  const pendingLeaves= leaveList.filter((l) => l.status === 'pending').length
+  const pendingLeaves= useSelector(selectPendingLeaveCount)
 
   const hoursClasses = stats ? getHoursClasses(stats.weekly_hours) : null
 
   // Today's planning — from profile teams
   const todayDate = new Date().toISOString().split('T')[0]
 
+  if (fetchError) {
+    return (
+      <div className="flex flex-col gap-5">
+        <ErrorState message={fetchError} onRetry={fetchAll} />
+      </div>
+    )
+  }
+
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
 
       {/* Greeting */}
       <motion.div
@@ -175,7 +187,7 @@ const DashboardPage = () => {
                   'h-2 w-2 rounded-full',
                   isCheckedIn
                     ? 'bg-emerald-500 animate-pulse'
-                    : 'bg-slate-300 dark:bg-dark-400'
+                    : 'bg-slate-300 dark:bg-slate-600'
                 )} />
               </div>
               <p className={cn(

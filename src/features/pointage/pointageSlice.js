@@ -7,6 +7,7 @@ import {
   verifyFlagThunk,
   fetchAbsentTodayThunk,
   fetchReplacementSuggestionThunk,
+  assignReplacementThunk,
 } from './pointageThunks'
 
 /**
@@ -39,9 +40,14 @@ const initialState = {
   myPointagesError:  null,
 
   // Admin: flagged pointages
-  flagged:        [],
-  flaggedMeta:    null,
-  flaggedLoading: false,
+  flagged:           [],
+  flaggedMeta:       null,
+  flaggedLoading:    false,
+  flaggedError:      null,
+
+  // Admin: verify flag
+  verifyFlagLoading: false,
+  verifyFlagError:   null,
 
   // Admin: absent today
   absentToday:        null,   // { absent_count, total_planned, absent_employees[] }
@@ -49,8 +55,13 @@ const initialState = {
   absentError:        null,
 
   // Admin: replacement suggestions per planning
-  replacements:       {},     // { [planningId]: { planning_id, original_employee, suggestions[] } }
-  replacementsLoading:{},     // { [planningId]: boolean }
+  replacements:        {},    // { [planningId]: { planning_id, original_employee, suggestions[] } }
+  replacementsLoading: {},    // { [planningId]: boolean }
+  replacementsError:   null,
+
+  // Admin: assign replacement
+  assignLoading:      false,
+  assignError:        null,
 }
 
 const pointageSlice = createSlice({
@@ -141,19 +152,29 @@ const pointageSlice = createSlice({
         state.flagged        = action.payload.data
         state.flaggedMeta    = action.payload.meta
       })
-      .addCase(fetchFlaggedThunk.rejected, (state) => {
+      .addCase(fetchFlaggedThunk.rejected, (state, action) => {
         state.flaggedLoading = false
+        state.flaggedError   = action.payload
       })
 
     // ── Verify flag ────────────────────────────────────────
     builder
+      .addCase(verifyFlagThunk.pending, (state) => {
+        state.verifyFlagLoading = true
+        state.verifyFlagError   = null
+      })
       .addCase(verifyFlagThunk.fulfilled, (state, action) => {
+        state.verifyFlagLoading = false
         const idx = state.flagged.findIndex((p) => p.id === action.payload.id)
         if (idx >= 0) {
           // Remove from flagged list once verified
           state.flagged.splice(idx, 1)
           if (state.flaggedMeta) state.flaggedMeta.total -= 1
         }
+      })
+      .addCase(verifyFlagThunk.rejected, (state, action) => {
+        state.verifyFlagLoading = false
+        state.verifyFlagError   = action.payload
       })
 
     // ── Absent today ───────────────────────────────────────
@@ -176,6 +197,7 @@ const pointageSlice = createSlice({
       .addCase(fetchReplacementSuggestionThunk.pending, (state, action) => {
         const id = action.meta.arg
         state.replacementsLoading[id] = true
+        state.replacementsError       = null
       })
       .addCase(fetchReplacementSuggestionThunk.fulfilled, (state, action) => {
         const id = action.payload.planning_id
@@ -185,6 +207,21 @@ const pointageSlice = createSlice({
       .addCase(fetchReplacementSuggestionThunk.rejected, (state, action) => {
         const id = action.meta.arg
         state.replacementsLoading[id] = false
+        state.replacementsError       = action.payload
+      })
+
+    // ── Assign replacement ─────────────────────────────────
+    builder
+      .addCase(assignReplacementThunk.pending, (state) => {
+        state.assignLoading = true
+        state.assignError   = null
+      })
+      .addCase(assignReplacementThunk.fulfilled, (state) => {
+        state.assignLoading = false
+      })
+      .addCase(assignReplacementThunk.rejected, (state, action) => {
+        state.assignLoading = false
+        state.assignError   = action.payload
       })
   },
 })

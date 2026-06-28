@@ -1,12 +1,9 @@
-import { useEffect }        from 'react'
-import { useDispatch }      from 'react-redux'
-import { useSelector }      from 'react-redux'
-import { motion }           from 'framer-motion'
-import { History }          from 'lucide-react'
-import axiosInstance        from '../../services/axiosInstance'
-import { API }              from '../../constants/apiRoutes'
-import { useState }         from 'react'
-import { Badge, Skeleton, EmptyState, Pagination } from '../ui'
+import { useEffect, useState } from 'react'
+import { motion }              from 'framer-motion'
+import { History }             from 'lucide-react'
+import axiosInstance           from '../../services/axiosInstance'
+import { API }                 from '../../constants/apiRoutes'
+import { Badge, Skeleton, EmptyState, Pagination, ErrorState } from '../ui'
 import { formatRelative }   from '../../utils/formatters'
 import { cn }               from '../../utils/cn'
 
@@ -34,21 +31,23 @@ const PersonalTimeline = () => {
   const [total,   setTotal]   = useState(0)
   const [page,    setPage]    = useState(1)
   const [loading, setLoading] = useState(false)
+  const [error,   setError]   = useState(null)
   const perPage = 20
 
   const fetchHistory = async (p = 1) => {
     setLoading(true)
+    setError(null)
     try {
       const res = await axiosInstance.get(API.ME.HISTORY, {
         params: { page: p, per_page: perPage },
       })
-      // Gap fix #2 response: { data: { data:[...], total, per_page, current_page } }
       const payload = res.data.data
       setItems(payload.data || [])
       setTotal(payload.total || 0)
       setPage(p)
     } catch {
       setItems([])
+      setError('Impossible de charger l\'historique')
     } finally {
       setLoading(false)
     }
@@ -74,6 +73,10 @@ const PersonalTimeline = () => {
         ))}
       </div>
     )
+  }
+
+  if (error && items.length === 0) {
+    return <ErrorState message={error} onRetry={() => fetchHistory(1)} />
   }
 
   if (items.length === 0) {

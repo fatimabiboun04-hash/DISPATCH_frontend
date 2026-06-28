@@ -109,3 +109,14 @@ export const fetchReplacementSuggestionThunk = createAsyncThunk(
     }
   }
 )
+
+export const assignReplacementThunk = createAsyncThunk(
+  'pointage/assignReplacement',
+  async ({ planningId, replacementUserId }, { rejectWithValue }) => {
+    try {
+      return await pointageService.assignReplacement(planningId, replacementUserId)
+    } catch (err) {
+      return rejectWithValue(err.message || 'Échec de l\'assignation du remplaçant')
+    }
+  }
+)

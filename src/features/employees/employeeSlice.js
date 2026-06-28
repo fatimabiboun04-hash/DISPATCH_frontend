@@ -43,14 +43,17 @@ const initialState = {
   history:         [],
   historyMeta:     null,
   historyLoading:  false,
+  historyError:    null,
 
   profilePlanning:        [],
   profilePlanningMeta:    null,
   profilePlanningLoading: false,
+  profilePlanningError:   null,
 
   profilePointages:        [],
   profilePointagesMeta:    null,
   profilePointagesLoading: false,
+  profilePointagesError:   null,
 
   // CRUD states
   submitting: false,
@@ -68,11 +71,17 @@ const employeeSlice = createSlice({
       state.filters = initialState.filters
     },
     clearDetail: (state) => {
-      state.detail         = null
-      state.detailError    = null
-      state.history        = []
-      state.profilePlanning = []
-      state.profilePointages = []
+      state.detail          = null
+      state.detailError     = null
+      state.history         = []
+      state.historyMeta     = null
+      state.historyError    = null
+      state.profilePlanning  = []
+      state.profilePlanningMeta = null
+      state.profilePlanningError = null
+      state.profilePointages  = []
+      state.profilePointagesMeta = null
+      state.profilePointagesError = null
     },
     clearSubmitError: (state) => {
       state.submitError = null
@@ -163,51 +172,66 @@ const employeeSlice = createSlice({
 
     // ── Delete ─────────────────────────────────────────────
     builder
+      .addCase(deleteEmployeeThunk.pending, (state) => {
+        state.submitting  = true
+        state.submitError = null
+      })
       .addCase(deleteEmployeeThunk.fulfilled, (state, action) => {
+        state.submitting = false
         state.list = state.list.filter((e) => e.id !== action.payload)
         if (state.meta) state.meta.total -= 1
+      })
+      .addCase(deleteEmployeeThunk.rejected, (state, action) => {
+        state.submitting  = false
+        state.submitError = action.payload
       })
 
     // ── History ────────────────────────────────────────────
     builder
       .addCase(fetchEmployeeHistoryThunk.pending, (state) => {
         state.historyLoading = true
+        state.historyError   = null
       })
       .addCase(fetchEmployeeHistoryThunk.fulfilled, (state, action) => {
         state.historyLoading = false
         state.history        = action.payload.data
         state.historyMeta    = action.payload.meta
       })
-      .addCase(fetchEmployeeHistoryThunk.rejected, (state) => {
+      .addCase(fetchEmployeeHistoryThunk.rejected, (state, action) => {
         state.historyLoading = false
+        state.historyError   = action.payload
       })
 
     // ── Profile planning ───────────────────────────────────
     builder
       .addCase(fetchEmployeePlanningThunk.pending, (state) => {
         state.profilePlanningLoading = true
+        state.profilePlanningError   = null
       })
       .addCase(fetchEmployeePlanningThunk.fulfilled, (state, action) => {
         state.profilePlanningLoading = false
         state.profilePlanning        = action.payload.data
         state.profilePlanningMeta    = action.payload.meta
       })
-      .addCase(fetchEmployeePlanningThunk.rejected, (state) => {
+      .addCase(fetchEmployeePlanningThunk.rejected, (state, action) => {
         state.profilePlanningLoading = false
+        state.profilePlanningError   = action.payload
       })
 
     // ── Profile pointages ──────────────────────────────────
     builder
       .addCase(fetchEmployeePointagesThunk.pending, (state) => {
         state.profilePointagesLoading = true
+        state.profilePointagesError   = null
       })
       .addCase(fetchEmployeePointagesThunk.fulfilled, (state, action) => {
         state.profilePointagesLoading = false
         state.profilePointages        = action.payload.data
         state.profilePointagesMeta    = action.payload.meta
       })
-      .addCase(fetchEmployeePointagesThunk.rejected, (state) => {
+      .addCase(fetchEmployeePointagesThunk.rejected, (state, action) => {
         state.profilePointagesLoading = false
+        state.profilePointagesError   = action.payload
       })
   },
 })

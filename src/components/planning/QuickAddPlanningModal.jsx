@@ -7,6 +7,8 @@ import { createPlanningThunk } from '../../features/planning/planningThunks'
 import {
   selectPlanningSubmitting,
   selectConflictErrors,
+  selectSubmitError,
+  selectFieldErrors,
 } from '../../features/planning/planningSelectors'
 import { clearSubmitError } from '../../features/planning/planningSlice'
 import { selectActiveShifts } from '../../features/shifts/shiftSelectors'
@@ -42,6 +44,8 @@ const QuickAddPlanningModal = ({
   const dispatch       = useDispatch()
   const submitting     = useSelector(selectPlanningSubmitting)
   const conflictErrors = useSelector(selectConflictErrors)
+  const submitError    = useSelector(selectSubmitError)
+  const fieldErrors    = useSelector(selectFieldErrors)
   const activeShifts   = useSelector(selectActiveShifts)
 
   const {
@@ -109,15 +113,34 @@ const QuickAddPlanningModal = ({
       }
     >
       <div className="space-y-4">
+        {/* Validation error (non-conflict 422s) */}
+        {submitError && (
+          <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-3 space-y-1
+                          dark:border-yellow-800 dark:bg-yellow-900/20">
+            {fieldErrors ? (
+              Object.entries(fieldErrors).map(([field, msgs]) => (
+                <p key={field} className="text-xs text-yellow-700 dark:text-yellow-300">
+                  {Array.isArray(msgs) ? msgs.join(', ') : msgs}
+                </p>
+              ))
+            ) : (
+              <p className="text-xs text-yellow-700 dark:text-yellow-300">{submitError}</p>
+            )}
+          </div>
+        )}
+
         {/* Conflict errors */}
         {conflictErrors.length > 0 && (
           <div className="rounded-xl border border-red-200 bg-red-50 p-3
                           dark:border-red-800 dark:bg-red-900/20">
-            {conflictErrors.map((err, i) => (
-              <p key={i} className="text-xs text-red-600 dark:text-red-400">
-                ⚠ {err}
-              </p>
-            ))}
+            {conflictErrors.map((err, i) => {
+              const msg = typeof err === 'string' ? err : err.message || ''
+              return (
+                <p key={i} className="text-xs text-red-600 dark:text-red-400">
+                  ⚠ {msg}
+                </p>
+              )
+            })}
           </div>
         )}
 

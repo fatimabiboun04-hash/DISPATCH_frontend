@@ -1,5 +1,4 @@
 import { useDispatch, useSelector } from 'react-redux'
-import { useEffect } from 'react'
 import { motion }    from 'framer-motion'
 import { Clock, MapPin, AlertTriangle } from 'lucide-react'
 import { fetchMyPointagesThunk } from '../../features/pointage/pointageThunks'
@@ -8,7 +7,7 @@ import {
   selectMyPointagesMeta,
   selectMyPointagesLoading,
 } from '../../features/pointage/pointageSelectors'
-import { setFilters } from '../../features/pointage/pointageSlice'
+
 import { Badge, Skeleton, EmptyState, Pagination } from '../ui'
 import { formatDate, formatTime, formatMinutesToHours } from '../../utils/formatters'
 import { cn } from '../../utils/cn'
@@ -33,10 +32,6 @@ const PointageHistoryList = () => {
   const pointages = useSelector(selectMyPointages)
   const meta      = useSelector(selectMyPointagesMeta)
   const loading   = useSelector(selectMyPointagesLoading)
-
-  useEffect(() => {
-    dispatch(fetchMyPointagesThunk({}))
-  }, [dispatch])
 
   const handlePageChange = (page) => {
     dispatch(fetchMyPointagesThunk({ page }))

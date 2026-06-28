@@ -51,6 +51,22 @@ export const updatePauseThunk = createAsyncThunk(
 )
 
 /**
+ * GET /v1/pauses/batch?planning_ids=1,2,3
+ * Returns { [planningId]: [...pauses] } grouped by planning_id.
+ * Used by MyPlanningPage to load all pauses in a single request.
+ */
+export const fetchPausesBatchThunk = createAsyncThunk(
+  'pauses/fetchBatch',
+  async (planningIds, { rejectWithValue }) => {
+    try {
+      return await pauseService.batchGetByPlanning(planningIds)
+    } catch (err) {
+      return rejectWithValue(err.message || 'Failed to load pauses')
+    }
+  }
+)
+
+/**
  * DELETE /v1/pauses/{id}
  * Returns successResponse(null, 'Pause deleted', 204) — has body.
  */

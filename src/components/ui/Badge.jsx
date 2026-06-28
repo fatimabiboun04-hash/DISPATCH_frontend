@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { cn } from '../../utils/cn'
 
 /**
@@ -56,4 +57,4 @@ const Badge = ({
   </span>
 )
 
-export default Badge
+export default memo(Badge)

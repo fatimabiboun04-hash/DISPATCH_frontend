@@ -1,7 +1,8 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { AlertTriangle, UserPlus, RefreshCw } from 'lucide-react'
+import { AlertTriangle, UserPlus, RefreshCw, Check } from 'lucide-react'
 import { useDispatch, useSelector } from 'react-redux'
-import { fetchReplacementSuggestionThunk } from '../../features/pointage/pointageThunks'
+import { fetchReplacementSuggestionThunk, assignReplacementThunk } from '../../features/pointage/pointageThunks'
 import {
   selectReplacements,
   selectReplacementsLoading,
@@ -9,6 +10,7 @@ import {
 import { Avatar, Button, Badge } from '../ui'
 import { getAvatarData } from '../../utils/avatarGenerator'
 import { cn } from '../../utils/cn'
+import toast from 'react-hot-toast'
 
 /**
  * AbsenceAlertCard — one absent employee alert row.
@@ -29,7 +31,7 @@ const STATUS_LABELS = {
   late_absent:    { label: 'Absent',     color: 'text-red-600',   variant: 'danger'  },
 }
 
-const AbsenceAlertCard = ({ absentEmployee, index }) => {
+const AbsenceAlertCard = ({ absentEmployee, index, onAssigned }) => {
   const dispatch      = useDispatch()
   const replacements  = useSelector(selectReplacements)
   const loadingMap    = useSelector(selectReplacementsLoading)
@@ -39,9 +41,23 @@ const AbsenceAlertCard = ({ absentEmployee, index }) => {
   const isLoading     = loadingMap[planningId] || false
   const statusConfig  = STATUS_LABELS[absentEmployee.status] || STATUS_LABELS.pending
   const { gradient }  = getAvatarData(absentEmployee.user_name)
+  const [assigningId, setAssigningId] = useState(null)
 
   const handleLoadReplacement = () => {
     dispatch(fetchReplacementSuggestionThunk(planningId))
+  }
+
+  const handleAssign = async (replacementUserId) => {
+    setAssigningId(replacementUserId)
+    const result = await dispatch(assignReplacementThunk({
+      planningId,
+      replacementUserId,
+    }))
+    setAssigningId(null)
+    if (assignReplacementThunk.fulfilled.match(result)) {
+      toast.success('Remplaçant assigné')
+      onAssigned?.(planningId)
+    }
   }
 
   return (
@@ -101,29 +117,46 @@ const AbsenceAlertCard = ({ absentEmployee, index }) => {
                         dark:text-emerald-400">
             Remplaçant suggéré
           </p>
-          {replacement.suggestions.slice(0, 2).map((s) => {
-            const { gradient: sg } = getAvatarData(s.employee.name)
-            return (
-              <div key={s.employee.id}
-                   className="flex items-center gap-2 mb-1 last:mb-0">
-                <div
-                  className="flex h-6 w-6 flex-shrink-0 items-center justify-center
-                             rounded-full text-2xs font-bold text-white"
-                  style={{ background: sg }}
-                >
-                  {s.employee.initials}
+          <div className="space-y-1.5">
+            {replacement.suggestions.slice(0, 3).map((s) => {
+              const { gradient: sg } = getAvatarData(s.employee.name)
+              const isAssigning = assigningId === s.employee.id
+              return (
+                <div key={s.employee.id}
+                     className="flex items-center gap-2 rounded-lg bg-white/60 px-2 py-1.5 dark:bg-dark-700/60">
+                  <div
+                    className="flex h-6 w-6 flex-shrink-0 items-center justify-center
+                               rounded-full text-2xs font-bold text-white"
+                    style={{ background: sg }}
+                  >
+                    {s.employee.initials}
+                  </div>
+                  <span className="flex-1 text-xs font-medium text-emerald-700
+                                   dark:text-emerald-300">
+                    {s.employee.name}
+                  </span>
+                  <span className="mr-1 text-2xs font-bold text-emerald-600
+                                   dark:text-emerald-400">
+                    {s.match_percentage}%
+                  </span>
+                  <button
+                    onClick={() => handleAssign(s.employee.id)}
+                    disabled={isAssigning}
+                    className="flex items-center gap-1 rounded-md bg-emerald-500 px-2 py-1
+                               text-2xs font-medium text-white hover:bg-emerald-600
+                               disabled:opacity-50 transition-colors"
+                  >
+                    {isAssigning ? (
+                      <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    ) : (
+                      <Check className="h-3 w-3" />
+                    )}
+                    Assigner
+                  </button>
                 </div>
-                <span className="flex-1 text-xs font-medium text-emerald-700
-                                 dark:text-emerald-300">
-                  {s.employee.name}
-                </span>
-                <span className="text-2xs font-bold text-emerald-600
-                                 dark:text-emerald-400">
-                  {s.match_percentage}%
-                </span>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
         </div>
       )}
 

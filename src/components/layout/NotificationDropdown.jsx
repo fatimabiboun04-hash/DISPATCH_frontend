@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useDispatch, useSelector } from 'react-redux'
 import { Bell, CheckCheck, Inbox } from 'lucide-react'
@@ -16,31 +16,27 @@ import {
 import NotificationItem from './NotificationItem'
 import { cn } from '../../utils/cn'
 
-/**
- * NotificationDropdown
- * Bell icon + animated dropdown panel with grouped notifications.
- * Polling every 60 seconds for new notifications.
- */
 const NotificationDropdown = ({ open, onToggle, onClose }) => {
   const dispatch      = useDispatch()
   const notifications = useSelector(selectNotifications)
   const unreadCount   = useSelector(selectUnreadCount)
   const loading       = useSelector(selectNotifLoading)
   const panelRef      = useRef(null)
+  const hasOpened     = useRef(false)
 
-  // Initial load
+  // Defer fetch and poll until the dropdown is first opened
   useEffect(() => {
-    dispatch(fetchUnreadCountThunk())
-    dispatch(fetchNotificationsThunk())
-  }, [dispatch])
-
-  // Poll every 60 seconds
-  useEffect(() => {
+    if (!open) return
+    if (!hasOpened.current) {
+      hasOpened.current = true
+      dispatch(fetchUnreadCountThunk())
+      dispatch(fetchNotificationsThunk())
+    }
     const interval = setInterval(() => {
       dispatch(fetchUnreadCountThunk())
     }, 60_000)
     return () => clearInterval(interval)
-  }, [dispatch])
+  }, [open, dispatch])
 
   // Close on outside click
   useEffect(() => {
@@ -53,14 +49,13 @@ const NotificationDropdown = ({ open, onToggle, onClose }) => {
     return () => document.removeEventListener('mousedown', handler)
   }, [open, onClose])
 
-  const handleMarkRead = (id) => dispatch(markReadThunk(id))
+  const handleMarkRead = useCallback((id) => dispatch(markReadThunk(id)), [dispatch])
 
   const handleMarkAll = () => {
     dispatch(markAllReadThunk())
     dispatch(fetchNotificationsThunk())
   }
 
-  // Group notifications by date label
   const grouped = notifications.reduce((acc, notif) => {
     const date = new Date(notif.created_at)
     const now  = new Date()
@@ -81,7 +76,6 @@ const NotificationDropdown = ({ open, onToggle, onClose }) => {
 
   return (
     <div ref={panelRef} className="relative">
-      {/* Bell button */}
       <button
         onClick={onToggle}
         className={cn(
@@ -93,7 +87,6 @@ const NotificationDropdown = ({ open, onToggle, onClose }) => {
         )}
       >
         <Bell className="h-4.5 w-4.5" />
-        {/* Unread badge */}
         <AnimatePresence>
           {unreadCount > 0 && (
             <motion.span
@@ -111,7 +104,6 @@ const NotificationDropdown = ({ open, onToggle, onClose }) => {
         </AnimatePresence>
       </button>
 
-      {/* Dropdown panel */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -125,7 +117,6 @@ const NotificationDropdown = ({ open, onToggle, onClose }) => {
                        bg-white shadow-strong
                        dark:border-dark-500 dark:bg-dark-700"
           >
-            {/* Header */}
             <div className="flex items-center justify-between
                             border-b border-surface-100 px-4 py-3
                             dark:border-dark-600">
@@ -154,10 +145,8 @@ const NotificationDropdown = ({ open, onToggle, onClose }) => {
               )}
             </div>
 
-            {/* Notification list */}
             <div className="max-h-96 overflow-y-auto">
               {loading && notifications.length === 0 ? (
-                // Skeletons
                 <div className="space-y-1 p-2">
                   {[1, 2, 3].map((i) => (
                     <div key={i}
@@ -171,7 +160,6 @@ const NotificationDropdown = ({ open, onToggle, onClose }) => {
                   ))}
                 </div>
               ) : Object.keys(grouped).length === 0 ? (
-                // Empty state
                 <div className="flex flex-col items-center justify-center
                                 gap-3 py-10">
                   <div className="flex h-12 w-12 items-center justify-center
@@ -186,7 +174,6 @@ const NotificationDropdown = ({ open, onToggle, onClose }) => {
                 <div className="p-2">
                   {Object.entries(grouped).map(([label, items]) => (
                     <div key={label}>
-                      {/* Date group label */}
                       <p className="px-3 py-1.5 text-2xs font-semibold
                                     uppercase tracking-wider text-slate-400
                                     dark:text-slate-600">
@@ -205,7 +192,6 @@ const NotificationDropdown = ({ open, onToggle, onClose }) => {
               )}
             </div>
 
-            {/* Footer */}
             <div className="border-t border-surface-100 px-4 py-2.5
                             dark:border-dark-600">
               <button

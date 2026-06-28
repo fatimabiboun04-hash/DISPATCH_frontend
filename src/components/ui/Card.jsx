@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { cn } from '../../utils/cn'
 
 /**
@@ -37,21 +38,20 @@ const Card = ({
   </div>
 )
 
-// Sub-components for semantic structure
-Card.Header = ({ children, className }) => (
-  <div className={cn('mb-4 flex items-center justify-between', className)}>
-    {children}
-  </div>
-)
+const CardWithSub = Object.assign(memo(Card), {
+  Header: ({ children, className }) => (
+    <div className={cn('mb-4 flex items-center justify-between', className)}>
+      {children}
+    </div>
+  ),
+  Title: ({ children, className }) => (
+    <h3 className={cn('text-sm font-semibold text-slate-800 dark:text-slate-100', className)}>
+      {children}
+    </h3>
+  ),
+  Body: ({ children, className }) => (
+    <div className={cn(className)}>{children}</div>
+  ),
+})
 
-Card.Title = ({ children, className }) => (
-  <h3 className={cn('text-sm font-semibold text-slate-800 dark:text-slate-100', className)}>
-    {children}
-  </h3>
-)
-
-Card.Body = ({ children, className }) => (
-  <div className={cn(className)}>{children}</div>
-)
-
-export default Card
+export default CardWithSub

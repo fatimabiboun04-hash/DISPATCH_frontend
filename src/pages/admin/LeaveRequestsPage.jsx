@@ -6,9 +6,12 @@ import {
   selectAdminLeaveFilters,
   selectAdminLeaveMeta,
   selectAdminLeaveList,
+  selectApproveResult,
 } from '../../features/leave/leaveSelectors'
+import { clearApproveResult } from '../../features/leave/leaveSlice'
 import LeaveFilters       from '../../components/leave/LeaveFilters'
 import LeaveRequestTable  from '../../components/leave/LeaveRequestTable'
+import ReplacementSuggestions from '../../components/leave/ReplacementSuggestions'
 import { Badge }          from '../../components/ui'
 import axiosInstance      from '../../services/axiosInstance'
 import { API }            from '../../constants/apiRoutes'
@@ -30,10 +33,11 @@ import { useState }       from 'react'
  * Only pending requests can be approved/rejected (backend enforced).
  */
 const LeaveRequestsPage = () => {
-  const dispatch  = useDispatch()
-  const filters   = useSelector(selectAdminLeaveFilters)
-  const meta      = useSelector(selectAdminLeaveMeta)
-  const list      = useSelector(selectAdminLeaveList)
+  const dispatch     = useDispatch()
+  const filters      = useSelector(selectAdminLeaveFilters)
+  const meta         = useSelector(selectAdminLeaveMeta)
+  const list         = useSelector(selectAdminLeaveList)
+  const approveResult = useSelector(selectApproveResult)
   const [employees, setEmployees] = useState([])
 
   const fetchLeaves = useCallback(() => {
@@ -86,6 +90,15 @@ const LeaveRequestsPage = () => {
           </p>
         </div>
       </motion.div>
+
+      {/* Replacement suggestions banner */}
+      {approveResult && (
+        <ReplacementSuggestions
+          suggestions={approveResult.replacement_suggestions || []}
+          planningRemoved={approveResult.planning_removed || 0}
+          onDismiss={() => dispatch(clearApproveResult())}
+        />
+      )}
 
       {/* Filters */}
       <LeaveFilters

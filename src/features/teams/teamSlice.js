@@ -149,12 +149,21 @@ const teamSlice = createSlice({
 
     // ── Remove employee ────────────────────────────────────
     builder
+      .addCase(removeEmployeeThunk.pending, (state) => {
+        state.submitting  = true
+        state.submitError = null
+      })
       .addCase(removeEmployeeThunk.fulfilled, (state, action) => {
+        state.submitting = false
         const idx = state.list.findIndex((t) => t.id === action.payload.id)
         if (idx >= 0) state.list[idx] = action.payload
         if (state.detail?.id === action.payload.id) {
           state.detail = { ...state.detail, users: action.payload.users }
         }
+      })
+      .addCase(removeEmployeeThunk.rejected, (state, action) => {
+        state.submitting  = false
+        state.submitError = action.payload
       })
   },
 })

@@ -1,32 +1,34 @@
-import { useEffect }     from 'react'
-import { useDispatch }   from 'react-redux'
+import { useEffect, useState } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
 import { motion }        from 'framer-motion'
 import { fetchMyLeaveRequestsThunk } from '../../features/leave/leaveThunks'
+import { selectMyLeaveList } from '../../features/leave/leaveSelectors'
 import LeaveRequestForm  from '../../components/leave/LeaveRequestForm'
 import LeaveHistoryTable from '../../components/leave/LeaveHistoryTable'
+import { Skeleton, ErrorState } from '../../components/ui'
 
-/**
- * MyLeaveRequestsPage — /employee/my-leave-requests
- *
- * Employee can:
- * 1. Submit a new leave request (LeaveRequestForm)
- * 2. View their own request history (LeaveHistoryTable)
- *
- * StoreLeaveRequest authorize() = isEmployee() only — correct.
- * Gap fix #1: POST /v1/leave-requests route added for employees.
- *
- * start_date must be after_or_equal:today (backend enforced).
- * Overlap check: cannot have two approved leave on same dates.
- */
 const MyLeaveRequestsPage = () => {
   const dispatch = useDispatch()
+  const leaveList = useSelector(selectMyLeaveList)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  const fetch = async () => {
+    setLoading(true)
+    setError(null)
+    const result = await dispatch(fetchMyLeaveRequestsThunk({}))
+    if (fetchMyLeaveRequestsThunk.rejected.match(result)) {
+      setError('Impossible de charger les congés')
+    }
+    setLoading(false)
+  }
 
   useEffect(() => {
-    dispatch(fetchMyLeaveRequestsThunk({}))
+    fetch()
   }, [dispatch])
 
   const handleFormSuccess = () => {
-    dispatch(fetchMyLeaveRequestsThunk({}))
+    fetch()
   }
 
   return (
@@ -45,23 +47,37 @@ const MyLeaveRequestsPage = () => {
         </p>
       </motion.div>
 
-      {/* Submission form */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.05 }}
-      >
-        <LeaveRequestForm onSuccess={handleFormSuccess} />
-      </motion.div>
+      {error ? (
+        <ErrorState message={error} onRetry={fetch} />
+      ) : (
+        <>
+          {/* Submission form */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+          >
+            <LeaveRequestForm onSuccess={handleFormSuccess} />
+          </motion.div>
 
-      {/* History */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.1 }}
-      >
-        <LeaveHistoryTable />
-      </motion.div>
+          {/* History */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.1 }}
+          >
+            {loading ? (
+              <div className="space-y-3">
+                <Skeleton.Block className="h-10 w-full rounded-xl" />
+                <Skeleton.Block className="h-10 w-full rounded-xl" />
+                <Skeleton.Block className="h-10 w-full rounded-xl" />
+              </div>
+            ) : (
+              <LeaveHistoryTable />
+            )}
+          </motion.div>
+        </>
+      )}
     </div>
   )
 }

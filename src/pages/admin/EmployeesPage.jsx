@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useDispatch, useSelector }          from 'react-redux'
 import { motion }                            from 'framer-motion'
 import toast                                 from 'react-hot-toast'
@@ -36,7 +36,7 @@ const EmployeesPage = () => {
       try {
         const [teamsRes, skillsRes] = await Promise.all([
           axiosInstance.get(API.TEAMS.LIST),
-          axiosInstance.get('/v1/skills'),  // skills list endpoint
+          axiosInstance.get(API.SKILLS.LIST),
         ])
         setTeams(teamsRes.data.data || [])
         setSkills(skillsRes.data.data || [])
@@ -80,7 +80,7 @@ const EmployeesPage = () => {
     }
   }
 
-  const teamOptions = teams.map((t) => ({ value: t.id, label: t.name }))
+  const teamOptions = useMemo(() => teams.map((t) => ({ value: t.id, label: t.name })), [teams])
 
   return (
     <div className="flex flex-col gap-5">

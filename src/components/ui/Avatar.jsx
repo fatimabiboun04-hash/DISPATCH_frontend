@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { getAvatarData } from '../../utils/avatarGenerator'
 import { cn } from '../../utils/cn'
 
@@ -67,4 +67,4 @@ const Avatar = ({
   )
 }
 
-export default Avatar
+export default memo(Avatar)

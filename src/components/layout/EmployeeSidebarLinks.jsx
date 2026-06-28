@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, CalendarDays, Clock,
-  FileText, History, User, ChevronRight,
+  FileText, History, User, ChevronRight, ListChecks,
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
@@ -11,6 +11,7 @@ const LINKS = [
   { to: '/employee/my-pointage',        icon: Clock,           label: 'Mon Pointage'    },
   { to: '/employee/my-leave-requests',  icon: FileText,        label: 'Mes Congés'      },
   { to: '/employee/my-history',         icon: History,         label: 'Mon Historique'  },
+  { to: '/employee/my-tasks',           icon: ListChecks,     label: 'Mes Tâches'      },
   { to: '/employee/my-profile',         icon: User,            label: 'Mon Profil'      },
 ]
 

@@ -5,12 +5,18 @@ import { cn } from '../../utils/cn'
 
 // Map notification type to icon and color
 const TYPE_CONFIG = {
-  leave_approved: { icon: CheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-  leave_rejected: { icon: AlertTriangle, color: 'text-red-500',   bg: 'bg-red-50 dark:bg-red-900/20' },
-  late_checkin:   { icon: Clock,        color: 'text-amber-500',  bg: 'bg-amber-50 dark:bg-amber-900/20' },
-  absence:        { icon: AlertTriangle, color: 'text-red-500',   bg: 'bg-red-50 dark:bg-red-900/20' },
-  planning:       { icon: Calendar,     color: 'text-brand-500',  bg: 'bg-brand-50 dark:bg-brand-900/20' },
-  default:        { icon: Bell,         color: 'text-slate-400',  bg: 'bg-slate-100 dark:bg-dark-500' },
+  leave_approved:  { icon: CheckCircle,    color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+  leave_rejected:  { icon: AlertTriangle,  color: 'text-red-500',    bg: 'bg-red-50 dark:bg-red-900/20' },
+  leave_submitted: { icon: Calendar,       color: 'text-amber-500',  bg: 'bg-amber-50 dark:bg-amber-900/20' },
+  late_checkin:    { icon: Clock,          color: 'text-amber-500',  bg: 'bg-amber-50 dark:bg-amber-900/20' },
+  absence:         { icon: AlertTriangle,  color: 'text-red-500',    bg: 'bg-red-50 dark:bg-red-900/20' },
+  planning:        { icon: Calendar,       color: 'text-brand-500',  bg: 'bg-brand-50 dark:bg-brand-900/20' },
+  flag_verified:   { icon: CheckCircle,    color: 'text-brand-500',  bg: 'bg-brand-50 dark:bg-brand-900/20' },
+  team_assigned:   { icon: CheckCircle,    color: 'text-emerald-500',bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+  team_removed:    { icon: AlertTriangle,  color: 'text-amber-500',  bg: 'bg-amber-50 dark:bg-amber-900/20' },
+  rating_received: { icon: Bell,           color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+  employee_welcome:{ icon: Bell,           color: 'text-brand-500',  bg: 'bg-brand-50 dark:bg-brand-900/20' },
+  default:         { icon: Bell,           color: 'text-slate-400',  bg: 'bg-slate-100 dark:bg-dark-500' },
 }
 
 /**

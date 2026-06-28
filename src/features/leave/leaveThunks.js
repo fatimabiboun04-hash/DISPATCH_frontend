@@ -35,16 +35,34 @@ export const submitLeaveRequestThunk = createAsyncThunk(
 
 /**
  * POST /v1/leave-requests/{id}/approve (admin)
- * No body required.
- * Returns updated leave with user + approver loaded.
+ *
+ * New flow:
+ * 1. First call WITHOUT force → backend checks for planning conflicts
+ * 2. If conflicts exist → backend returns 422 with { has_conflicts, requires_force, conflicts }
+ *    Thunk returns this as a structured payload with isConflict: true
+ * 3. Second call WITH { force: true } → backend removes planning and approves
+ *    On success returns: { leave_request, planning_removed, replacement_suggestions }
+ *
+ * The calling component uses the conflict payload to show a warning dialog.
  */
 export const approveLeaveThunk = createAsyncThunk(
   'leave/approve',
-  async (id, { rejectWithValue }) => {
+  async ({ id, force = false } = {}, { rejectWithValue }) => {
     try {
-      return await leaveService.approve(id)
+      return await leaveService.approve(id, { force })
     } catch (err) {
-      return rejectWithValue(err.message || 'Failed to approve')
+      // Check if this is a planning conflict (requires_force)
+      if (err.errors?.requires_force) {
+        return rejectWithValue({
+          isConflict: true,
+          has_conflicts: true,
+          requires_force: true,
+          conflicts: err.errors.conflicts || [],
+          conflict_count: err.errors.conflict_count || 0,
+          message: err.message || 'Planning conflict detected',
+        })
+      }
+      return rejectWithValue({ message: err.message || 'Failed to approve' })
     }
   }
 )

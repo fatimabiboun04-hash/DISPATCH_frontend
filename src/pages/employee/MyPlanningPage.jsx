@@ -1,16 +1,12 @@
-import { useEffect, useState, useCallback } from 'react'
-import { useDispatch }   from 'react-redux'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { motion }        from 'framer-motion'
-import { format, getISOWeek, getISOWeekYear, addDays, startOfISOWeek } from 'date-fns'
-import { fr }            from 'date-fns/locale'
 import axiosInstance     from '../../services/axiosInstance'
 import { API }           from '../../constants/apiRoutes'
 import TimelineView      from '../../components/planning/TimelineView'
 import EmployeePauseList from '../../components/planning/EmployeePauseList'
 import WeekSelector      from '../../components/planning/WeekSelector'
-import { Tabs, Skeleton } from '../../components/ui'
+import { Tabs, Skeleton, ErrorState } from '../../components/ui'
 import { usePlanning }   from '../../hooks/usePlanning'
-import { cn }            from '../../utils/cn'
 
 /**
  * MyPlanningPage — /employee/my-planning
@@ -37,6 +33,7 @@ const MyPlanningPage = () => {
   const [plannings,    setPlannings]    = useState([])
   const [pauses,       setPauses]       = useState({})
   const [loadingPlan,  setLoadingPlan]  = useState(false)
+  const [planError,    setPlanError]    = useState(null)
   const [activeDay,    setActiveDay]    = useState(
     new Date().toISOString().split('T')[0]  // today
   )
@@ -54,14 +51,15 @@ const MyPlanningPage = () => {
   // Fetch planning when week changes
   const fetchPlanning = useCallback(async (wn, yr) => {
     setLoadingPlan(true)
+    setPlanError(null)
     try {
       const res = await axiosInstance.get(API.ME.PLANNING, {
         params: { week_number: wn, year: yr },
       })
-      // GET /v1/me/planning returns plain array (successResponse)
       setPlannings(res.data.data || [])
     } catch {
       setPlannings([])
+      setPlanError('Impossible de charger le planning')
     } finally {
       setLoadingPlan(false)
     }
@@ -71,15 +69,34 @@ const MyPlanningPage = () => {
     fetchPlanning(weekNum, year)
   }, [weekNum, year, fetchPlanning])
 
-  // Fetch pauses for each planning in the week
+  // Fetch pauses for all plannings in a single batch request
   useEffect(() => {
-    if (!plannings.length) return
-    plannings.forEach(async (p) => {
+    if (!plannings.length) {
+      setPauses({})
+      return
+    }
+
+    const abortController = new AbortController()
+    const planningIds = plannings.map((p) => p.id)
+
+    const fetchBatch = async () => {
       try {
-        const res = await axiosInstance.get(API.PAUSES.BY_PLANNING(p.id))
-        setPauses((prev) => ({ ...prev, [p.id]: res.data.data || [] }))
-      } catch {}
-    })
+        const res = await axiosInstance.get(API.PAUSES.BATCH, {
+          params: { planning_ids: planningIds.join(',') },
+          signal: abortController.signal,
+        })
+        if (!abortController.signal.aborted) {
+          setPauses(res.data.data || {})
+        }
+      } catch (err) {
+        if (err.name !== 'CanceledError' && !abortController.signal.aborted) {
+          setPauses({})
+        }
+      }
+    }
+
+    fetchBatch()
+    return () => abortController.abort()
   }, [plannings])
 
   // Filter plannings for the active day
@@ -88,12 +105,14 @@ const MyPlanningPage = () => {
   // Get pauses for today's plannings
   const todayPauses = todayPlannings.flatMap((p) => pauses[p.id] || [])
 
-  // Day tabs
-  const dayTabs = days.map((day) => ({
-    value:  day.date,
-    label:  `${day.label} ${day.dayNum}`,
-    count:  plannings.filter((p) => p.date === day.date).length || undefined,
-  }))
+  const dayTabs = useMemo(() =>
+    days.map((day) => ({
+      value:  day.date,
+      label:  `${day.label} ${day.dayNum}`,
+      count:  plannings.filter((p) => p.date === day.date).length || undefined,
+    })),
+    [days, plannings]
+  )
 
   return (
     <div className="flex flex-col gap-5 max-w-lg mx-auto">
@@ -126,6 +145,11 @@ const MyPlanningPage = () => {
         onChange={setActiveDay}
         variant="pill"
       />
+
+      {/* Error state */}
+      {planError && (
+        <ErrorState message={planError} onRetry={() => fetchPlanning(weekNum, year)} />
+      )}
 
       {/* Timeline */}
       <motion.div

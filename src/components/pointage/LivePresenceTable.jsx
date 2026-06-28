@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { motion }    from 'framer-motion'
-import { useState }  from 'react'
 import { Clock, AlertTriangle, UserCheck } from 'lucide-react'
 import { fetchAbsentTodayThunk } from '../../features/pointage/pointageThunks'
 import {
@@ -28,6 +27,10 @@ const LivePresenceTable = () => {
 
   useEffect(() => {
     dispatch(fetchAbsentTodayThunk())
+    const interval = setInterval(() => {
+      dispatch(fetchAbsentTodayThunk())
+    }, 30000)
+    return () => clearInterval(interval)
   }, [dispatch])
 
   const handleRefresh = () => dispatch(fetchAbsentTodayThunk())
@@ -94,13 +97,14 @@ const LivePresenceTable = () => {
         />
       ) : (
         <div className="space-y-3">
-          {absentList.map((employee, i) => (
-            <AbsenceAlertCard
-              key={`${employee.planning_id}-${employee.user_id}`}
-              absentEmployee={employee}
-              index={i}
-            />
-          ))}
+            {absentList.map((employee, i) => (
+              <AbsenceAlertCard
+                key={`${employee.planning_id}-${employee.user_id}`}
+                absentEmployee={employee}
+                index={i}
+                onAssigned={handleRefresh}
+              />
+            ))}
         </div>
       )}
     </div>

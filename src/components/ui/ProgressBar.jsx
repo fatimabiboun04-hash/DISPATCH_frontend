@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { cn } from '../../utils/cn'
 
 /**
@@ -54,4 +55,4 @@ const ProgressBar = ({
   )
 }
 
-export default ProgressBar
+export default memo(ProgressBar)

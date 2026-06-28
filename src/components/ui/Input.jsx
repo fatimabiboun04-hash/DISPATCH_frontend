@@ -1,4 +1,4 @@
-import { forwardRef } from 'react'
+import { forwardRef, useId, memo } from 'react'
 import { cn } from '../../utils/cn'
 
 /**
@@ -16,9 +16,14 @@ const Input = forwardRef(({
   className,
   containerClassName,
   size = 'md',
+  id: externalId,
   ...props
 }, ref) => {
   const hasError = !!error
+  const generatedId = useId()
+  const inputId = externalId || generatedId
+  const errorId = `${inputId}-error`
+  const helperId = `${inputId}-helper`
 
   const inputSizes = {
     sm: 'h-8 px-3 text-xs',
@@ -28,9 +33,8 @@ const Input = forwardRef(({
 
   return (
     <div className={cn('flex flex-col gap-1.5', containerClassName)}>
-      {/* Label */}
       {label && (
-        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+        <label htmlFor={inputId} className="text-xs font-medium text-slate-700 dark:text-slate-300">
           {label}
           {props.required && (
             <span className="ml-0.5 text-red-500">*</span>
@@ -38,9 +42,7 @@ const Input = forwardRef(({
         </label>
       )}
 
-      {/* Input wrapper */}
       <div className="relative">
-        {/* Left icon */}
         {leftIcon && (
           <div className="pointer-events-none absolute inset-y-0 left-3
                           flex items-center text-slate-400">
@@ -50,6 +52,11 @@ const Input = forwardRef(({
 
         <input
           ref={ref}
+          id={inputId}
+          aria-invalid={hasError || undefined}
+          aria-describedby={
+            error ? errorId : helper ? helperId : undefined
+          }
           className={cn(
             'w-full rounded-lg border bg-white font-normal',
             'text-slate-900 placeholder-slate-400',
@@ -76,21 +83,18 @@ const Input = forwardRef(({
         )}
       </div>
 
-      {/* Error message */}
       {error && (
-        <p className="flex items-center gap-1 text-xs text-red-500 dark:text-red-400">
-          <span className="h-3 w-3 flex-shrink-0">⚠</span>
+        <p id={errorId} className="flex items-center gap-1 text-xs text-red-500 dark:text-red-400">
           {error}
         </p>
       )}
 
-      {/* Helper text */}
       {!error && helper && (
-        <p className="text-xs text-slate-400">{helper}</p>
+        <p id={helperId} className="text-xs text-slate-400">{helper}</p>
       )}
     </div>
   )
 })
 
 Input.displayName = 'Input'
-export default Input
+export default memo(Input)

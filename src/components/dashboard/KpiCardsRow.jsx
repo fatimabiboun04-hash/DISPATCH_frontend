@@ -1,15 +1,16 @@
 import {
   Users, Clock, FileText, AlertTriangle,
-  TrendingUp, PauseCircle, CalendarCheck,
+  TrendingUp, PauseCircle,
 } from 'lucide-react'
 import { useSelector } from 'react-redux'
 import { motion } from 'framer-motion'
 import {
   selectStats, selectStatsLoading,
-  selectCoveragePct, selectActiveCount,
+  selectCoveragePct, selectPresentNow,
   selectTotalEmployees, selectDelaysToday,
-  selectPendingLeaves, selectFlaggedPointages,
+  selectPendingLeaves,
   selectActivePausesCount, selectTodayAssignments,
+  selectOvertimes,
 } from '../../features/dashboard/dashboardSelectors'
 
 import { StatCard } from '../ui'
@@ -19,28 +20,29 @@ import { StatCard } from '../ui'
  *
  * Data sources:
  *   - coverage.percentage  → GET /v1/dashboard/stats
- *   - coverage.active      → stats
+ *   - coverage.present_now → stats (currently checked in)
  *   - delays_today         → stats
  *   - pending_leaves       → stats
- *   - flagged_pointages    → stats
+ *   - overtimes            → stats (weekly aggregate)
  *   - active pauses count  → GET /v1/dashboard/active-pauses
+ *   - today_assignments    → stats
  */
 const KpiCardsRow = () => {
   const loading        = useSelector(selectStatsLoading)
   const coveragePct    = useSelector(selectCoveragePct)
-  const active         = useSelector(selectActiveCount)
-  const total          = useSelector(selectTotalEmployees)
+  const presentNow     = useSelector(selectPresentNow)
+  const totalEmp       = useSelector(selectTotalEmployees)
   const delays         = useSelector(selectDelaysToday)
   const pendingLeaves  = useSelector(selectPendingLeaves)
-  const flagged        = useSelector(selectFlaggedPointages)
   const pauseCount     = useSelector(selectActivePausesCount)
   const todayAssign    = useSelector(selectTodayAssignments)
+  const overtimes      = useSelector(selectOvertimes)
 
   const cards = [
     {
       label:      'Couverture Aujourd\'hui',
       value:      `${coveragePct}%`,
-      sublabel:   `${active} / ${total} employés`,
+      sublabel:   `${totalEmp} employés actifs`,
       icon:       TrendingUp,
       iconBg:     coveragePct >= 80
         ? 'bg-emerald-50 dark:bg-emerald-900/20'
@@ -51,8 +53,8 @@ const KpiCardsRow = () => {
     },
     {
       label:     'Présents Maintenant',
-      value:     active,
-      sublabel:  `sur ${total} planifiés`,
+      value:     presentNow,
+      sublabel:  'en cours de service',
       icon:      Users,
       iconBg:    'bg-brand-50 dark:bg-brand-900/20',
       iconColor: 'text-brand-500 dark:text-brand-400',
@@ -90,12 +92,16 @@ const KpiCardsRow = () => {
       iconColor: 'text-blue-500 dark:text-blue-400',
     },
     {
-      label:     'Assignations Aujourd\'hui',
-      value:     todayAssign,
-      sublabel:  'planifiées',
-      icon:      CalendarCheck,
-      iconBg:    'bg-indigo-50 dark:bg-indigo-900/20',
-      iconColor: 'text-indigo-500 dark:text-indigo-400',
+      label:     'Heures Supplémentaires',
+      value:     overtimes,
+      sublabel:  overtimes === 1 ? 'employé' : 'employés',
+      icon:      AlertTriangle,
+      iconBg:    overtimes > 0
+        ? 'bg-amber-50 dark:bg-amber-900/20'
+        : 'bg-emerald-50 dark:bg-emerald-900/20',
+      iconColor: overtimes > 0
+        ? 'text-amber-500 dark:text-amber-400'
+        : 'text-emerald-500 dark:text-emerald-400',
     },
   ]
 

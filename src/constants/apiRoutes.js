@@ -48,6 +48,23 @@ export const API = {
     REMOVE: (teamId, userId) => `${BASE}/teams/${teamId}/remove/${userId}`,
   },
 
+  SKILLS: {
+    LIST:   `${BASE}/skills`,
+    CREATE: `${BASE}/skills`,
+    UPDATE: (id) => `${BASE}/skills/${id}`,
+    DELETE: (id) => `${BASE}/skills/${id}`,
+  },
+
+  // ── Tasks ─────────────────────────────────────────────────
+  TASKS: {
+    LIST:    `${BASE}/tasks`,
+    CREATE:  `${BASE}/tasks`,
+    SHOW:    (id) => `${BASE}/tasks/${id}`,
+    UPDATE:  (id) => `${BASE}/tasks/${id}`,
+    DELETE:  (id) => `${BASE}/tasks/${id}`,
+    MY_LIST: `${BASE}/me/tasks`,
+  },
+
   // ── Shifts ────────────────────────────────────────────────
   SHIFTS: {
     LIST:   `${BASE}/shifts`,
@@ -65,8 +82,31 @@ export const API = {
     DELETE:            (id) => `${BASE}/planning/${id}`,
     SUGGEST:           `${BASE}/planning/suggest`,
     OVERRIDE_LOCK:     `${BASE}/planning/override-lock`,
+    LOCK:              (id) => `${BASE}/planning/${id}/lock`,
     GENERATE_NEXT:     `${BASE}/planning/generate-next-week`,
     LOCK_CURRENT:      `${BASE}/planning/lock-current-week`,
+    // Templates
+    TEMPLATES:         `${BASE}/planning-templates`,
+    TEMPLATE_SHOW:     (id) => `${BASE}/planning-templates/${id}`,
+    TEMPLATE_UPDATE:   (id) => `${BASE}/planning-templates/${id}`,
+    TEMPLATE_DELETE:   (id) => `${BASE}/planning-templates/${id}`,
+    TEMPLATE_DUPLICATE:(id) => `${BASE}/planning-templates/${id}/duplicate`,
+    TEMPLATE_LOAD:     (id) => `${BASE}/planning-templates/${id}/load`,
+    // Sandbox
+    SANDBOX_GENERATE:  `${BASE}/planning/sandbox/generate`,
+    SANDBOX_PREVIEW:   `${BASE}/planning/sandbox/preview`,
+    SANDBOX_ACCEPT:    `${BASE}/planning/sandbox/accept`,
+    SANDBOX_CANCEL:    `${BASE}/planning/sandbox/cancel`,
+    // Stats
+    STATS:             `${BASE}/planning/stats`,
+    // Audit
+    AUDITS:            `${BASE}/planning/audits`,
+    // Batch operations
+    BATCH_DELETE:      `${BASE}/planning/batch/delete`,
+    BATCH_UPDATE_SHIFT: `${BASE}/planning/batch/update-shift`,
+    BATCH_ASSIGN_EMPLOYEE: `${BASE}/planning/batch/assign-employee`,
+    BATCH_DUPLICATE_DAY: `${BASE}/planning/batch/duplicate-day`,
+    BATCH_VALIDATE:    `${BASE}/planning/batch/validate`,
   },
 
   // ── Pauses ────────────────────────────────────────────────
@@ -75,7 +115,10 @@ export const API = {
     UPDATE:       (id) => `${BASE}/pauses/${id}`,
     DELETE:       (id) => `${BASE}/pauses/${id}`,
     BY_PLANNING:  (planningId) => `${BASE}/pauses/planning/${planningId}`,
+    BATCH:        `${BASE}/pauses/batch`,
     ACTIVE_TODAY: `${BASE}/pauses/active-today`,
+    START_MY:     `${BASE}/me/pauses/start`,
+    STOP_MY:      `${BASE}/me/pauses/stop`,
   },
 
   // ── Pointage ──────────────────────────────────────────────
@@ -85,7 +128,8 @@ export const API = {
     FLAGGED:        `${BASE}/pointages/flagged`,
     VERIFY:         (id) => `${BASE}/pointages/${id}/verify`,
     ABSENT_TODAY:   `${BASE}/pointage/absent-today`,
-    REPLACEMENT:    (planningId) => `${BASE}/pointage/replacement-suggestion/${planningId}`,
+    REPLACEMENT:         (planningId) => `${BASE}/pointage/replacement-suggestion/${planningId}`,
+    ASSIGN_REPLACEMENT:  (planningId) => `${BASE}/pointage/assign-replacement/${planningId}`,
   },
 
   // ── Leave Requests ────────────────────────────────────────
@@ -102,12 +146,14 @@ export const API = {
     LIVE_FEED:     `${BASE}/dashboard/live-feed`,
     COVERAGE:      `${BASE}/dashboard/coverage`,
     ACTIVE_PAUSES: `${BASE}/dashboard/active-pauses`,
+    WEEKLY_HISTORY:`${BASE}/dashboard/weekly-history`,
   },
 
   // ── Reports ───────────────────────────────────────────────
   REPORTS: {
     LIST:     `${BASE}/reports`,
     CREATE:   `${BASE}/reports`,
+    SHOW:     (id) => `${BASE}/reports/${id}`,
     DOWNLOAD: (id) => `${BASE}/reports/${id}/download`,
   },
 

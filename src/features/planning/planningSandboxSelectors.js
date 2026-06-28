@@ -1,0 +1,9 @@
+export const selectSandboxItems = (state) => state.planningSandbox?.items || []
+export const selectSandboxCount = (state) => state.planningSandbox?.count || 0
+export const selectSandboxSessionId = (state) => state.planningSandbox?.sessionId || null
+export const selectSandboxGenerating = (state) => state.planningSandbox?.generating || false
+export const selectSandboxLoading = (state) => state.planningSandbox?.loading || false
+export const selectSandboxAccepting = (state) => state.planningSandbox?.accepting || false
+export const selectSandboxResult = (state) => state.planningSandbox?.result || null
+export const selectSandboxErrors = (state) => state.planningSandbox?.errors || []
+export const selectSandboxError = (state) => state.planningSandbox?.error || null

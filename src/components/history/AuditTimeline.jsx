@@ -47,7 +47,9 @@ const AuditTimeline = () => {
           params: { per_page: 100 },
         })
         setEmployees(res.data.data || [])
-      } catch {}
+      } catch (err) {
+        console.error('Failed to load employees for filter', err)
+      }
     }
     fetch()
   }, [])

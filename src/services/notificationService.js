@@ -4,7 +4,10 @@ import { API } from '../constants/apiRoutes'
 const notificationService = {
   getAll: async () => {
     const res = await axiosInstance.get(API.ME.NOTIFICATIONS)
-    return res.data
+    return {
+      data: res.data.data,
+      meta: res.data.meta,
+    }
   },
   getUnreadCount: async () => {
     const res = await axiosInstance.get(API.ME.UNREAD_COUNT)

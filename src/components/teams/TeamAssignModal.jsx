@@ -7,7 +7,7 @@ import {
   removeEmployeeThunk,
 } from '../../features/teams/teamThunks'
 import { selectTeamSubmitting } from '../../features/teams/teamSelectors'
-import { Modal, Avatar, Badge, Button, Skeleton } from '../ui'
+import { Modal, Avatar, Button } from '../ui'
 import { cn } from '../../utils/cn'
 import toast from 'react-hot-toast'
 

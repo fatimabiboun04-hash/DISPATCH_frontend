@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
 import {
   fetchPausesByPlanningThunk,
+  fetchPausesBatchThunk,
   createPauseThunk,
   updatePauseThunk,
   deletePauseThunk,
@@ -49,6 +50,23 @@ const pauseSlice = createSlice({
       .addCase(fetchPausesByPlanningThunk.rejected, (state, action) => {
         const id = action.meta.arg
         state.loading[id] = false
+      })
+
+    // ── Fetch batch ────────────────────────────────────────
+    builder
+      .addCase(fetchPausesBatchThunk.fulfilled, (state, action) => {
+        const grouped = action.payload
+        Object.entries(grouped).forEach(([planningId, pauses]) => {
+          state.byPlanningId[planningId] = pauses
+          state.loading[planningId]      = false
+        })
+      })
+      .addCase(fetchPausesBatchThunk.rejected, (state, action) => {
+        // Only clear loading for the IDs that were in the batch request
+        const requestedIds = action.meta.arg || []
+        requestedIds.forEach((id) => {
+          state.loading[id] = false
+        })
       })
 
     // ── Create pause ───────────────────────────────────────

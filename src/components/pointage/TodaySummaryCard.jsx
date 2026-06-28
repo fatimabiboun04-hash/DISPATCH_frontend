@@ -1,4 +1,4 @@
-import { Clock, TrendingUp, Coffee, ArrowLeft } from 'lucide-react'
+import { Clock, TrendingUp, ArrowLeft } from 'lucide-react'
 import { formatTime, formatMinutesToHours } from '../../utils/formatters'
 import { cn } from '../../utils/cn'
 

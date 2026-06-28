@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { cn } from '../../utils/cn'
 
 /**
@@ -19,4 +20,4 @@ const FormField = ({ label, error, helper, required, children, className }) => (
   </div>
 )
 
-export default FormField
+export default memo(FormField)

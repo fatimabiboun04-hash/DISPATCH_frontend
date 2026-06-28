@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { AlertTriangle, Trash2 } from 'lucide-react'
 import Modal from './Modal'
 import Button from './Button'
@@ -58,4 +59,4 @@ const ConfirmDialog = ({
   </Modal>
 )
 
-export default ConfirmDialog
+export default memo(ConfirmDialog)

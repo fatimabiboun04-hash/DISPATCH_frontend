@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { cn } from '../../utils/cn'
 import Button from './Button'
 
@@ -56,4 +57,4 @@ const EmptyState = ({
   )
 }
 
-export default EmptyState
+export default memo(EmptyState)

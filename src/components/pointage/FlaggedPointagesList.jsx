@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { motion }                   from 'framer-motion'
-import { AlertTriangle, Shield }    from 'lucide-react'
+import { Shield }    from 'lucide-react'
 import { fetchFlaggedThunk } from '../../features/pointage/pointageThunks'
 import {
   selectFlaggedPointages,
@@ -31,6 +31,10 @@ const FlaggedPointagesList = () => {
 
   useEffect(() => {
     dispatch(fetchFlaggedThunk({}))
+    const interval = setInterval(() => {
+      dispatch(fetchFlaggedThunk({}))
+    }, 30000)
+    return () => clearInterval(interval)
   }, [dispatch])
 
   const handlePageChange = (page) => {

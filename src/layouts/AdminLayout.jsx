@@ -6,14 +6,6 @@ import Topbar from '../components/layout/Topbar'
 import AdminSidebarLinks from '../components/layout/AdminSidebarLinks'
 import { useDarkMode } from '../hooks/useDarkMode'
 
-/**
- * AdminLayout — root layout for all /admin/* pages.
- *
- * Structure:
- *   Fixed Sidebar (left)  +  Fixed Topbar (top)  +  Scrollable main content
- *
- * CSS variables drive sidebar width so Topbar padding stays in sync.
- */
 const AdminLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [sidebarW, setSidebarW] = useState(240)
@@ -22,15 +14,18 @@ const AdminLayout = () => {
 
   useDarkMode()
 
-  // Close mobile sidebar on route change
   useEffect(() => {
     setMobileOpen(false)
   }, [location.pathname])
 
-  return (
-    <div className="min-h-screen bg-surface-50 dark:bg-dark-900">
+  const topbarLeft = sidebarW + 16 // sidebar + 1rem padding
 
-      {/* Sidebar */}
+  return (
+    <div
+      className="min-h-screen bg-surface-50 dark:bg-dark-900"
+      style={{ '--topbar-left': `${topbarLeft}px` }}
+    >
+
       <Sidebar
         LinkComponent={AdminSidebarLinks}
         mobileOpen={mobileOpen}
@@ -38,30 +33,17 @@ const AdminLayout = () => {
         onWidthChange={setSidebarW}
       />
 
-      {/* Topbar */}
-      <div
-        className="lg:transition-all lg:duration-300"
-        style={{
-          '--topbar-left':
-            window.innerWidth >= 1024
-              ? `calc(${sidebarW}px + 1rem)`
-              : '1rem',
-        }}
-      >
-        <Topbar onMenuToggle={() => setMobileOpen((o) => !o)} />
-      </div>
+      <Topbar onMenuToggle={() => setMobileOpen((o) => !o)} />
 
-      {/* Main content */}
       <motion.main
         key={location.pathname}
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2, ease: 'easeOut' }}
-        className="pt-16 transition-all duration-300"
-        style={{
-          paddingLeft:
-            window.innerWidth >= 1024 ? `${sidebarW}px` : '0px',
-        }}
+        className={`
+          pt-16 transition-all duration-300
+          ${sidebarW <= 64 ? 'lg:pl-16' : 'lg:pl-60'}
+        `}
       >
         <div className="min-h-[calc(100vh-4rem)] p-6">
           <Outlet />

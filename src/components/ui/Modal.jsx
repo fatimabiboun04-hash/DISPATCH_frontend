@@ -1,18 +1,8 @@
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useId, memo } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 import { cn } from '../../utils/cn'
-
-/**
- * Modal — accessible animated dialog using Framer Motion.
- *
- * Sizes: sm | md (default) | lg | xl | full
- * - Closes on ESC key
- * - Closes on backdrop click (unless closeOnBackdrop=false)
- * - Traps focus (via tabIndex on backdrop)
- * - Renders into document.body via portal
- */
 
 const SIZES = {
   sm:   'max-w-sm',
@@ -34,7 +24,8 @@ const Modal = ({
   showClose = true,
   className,
 }) => {
-  // Close on ESC
+  const titleId = useId()
+
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Escape') onClose()
   }, [onClose])
@@ -53,7 +44,6 @@ const Modal = ({
   return createPortal(
     <AnimatePresence>
       {open && (
-        // Backdrop
         <motion.div
           key="modal-backdrop"
           initial={{ opacity: 0 }}
@@ -64,9 +54,11 @@ const Modal = ({
           className="fixed inset-0 z-50 flex items-center justify-center
                      bg-black/50 backdrop-blur-sm p-4"
         >
-          {/* Dialog panel */}
           <motion.div
             key="modal-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={title ? titleId : undefined}
             initial={{ opacity: 0, scale: 0.96, y: 8 }}
             animate={{ opacity: 1, scale: 1,    y: 0  }}
             exit={{   opacity: 0, scale: 0.96, y: 8  }}
@@ -79,14 +71,13 @@ const Modal = ({
               className
             )}
           >
-            {/* Header */}
             {(title || showClose) && (
               <div className="flex items-start justify-between
                               border-b border-surface-100 px-6 py-4
                               dark:border-dark-600">
                 <div>
                   {title && (
-                    <h2 className="text-base font-semibold
+                    <h2 id={titleId} className="text-base font-semibold
                                    text-slate-800 dark:text-slate-100">
                       {title}
                     </h2>
@@ -98,6 +89,7 @@ const Modal = ({
                 {showClose && (
                   <button
                     onClick={onClose}
+                    aria-label="Fermer"
                     className="ml-4 flex h-7 w-7 flex-shrink-0 items-center
                                justify-center rounded-lg text-slate-400
                                transition-colors hover:bg-surface-100
@@ -110,12 +102,10 @@ const Modal = ({
               </div>
             )}
 
-            {/* Body */}
             <div className="max-h-[70vh] overflow-y-auto px-6 py-5">
               {children}
             </div>
 
-            {/* Footer */}
             {footer && (
               <div className="flex items-center justify-end gap-3
                               border-t border-surface-100 px-6 py-4
@@ -131,4 +121,4 @@ const Modal = ({
   )
 }
 
-export default Modal
+export default memo(Modal)

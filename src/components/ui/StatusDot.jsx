@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { cn } from '../../utils/cn'
 
 /**
@@ -36,4 +37,4 @@ const StatusDot = ({ status = 'pending', size = 'sm', className }) => (
   )} />
 )
 
-export default StatusDot
+export default memo(StatusDot)

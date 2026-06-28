@@ -12,20 +12,27 @@ import { useDarkMode }       from '../hooks/useDarkMode'
  */
 const EmployeeLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false)
-  const location                    = useLocation()
+  const [sidebarW, setSidebarW] = useState(240)
+  const location = useLocation()
   useDarkMode()
 
   useEffect(() => {
     setMobileOpen(false)
   }, [location.pathname])
 
+  const topbarLeft = sidebarW + 16
+
   return (
-    <div className="min-h-screen bg-surface-50 dark:bg-dark-900">
+    <div
+      className="min-h-screen bg-surface-50 dark:bg-dark-900"
+      style={{ '--topbar-left': `${topbarLeft}px` }}
+    >
 
       <Sidebar
         LinkComponent={EmployeeSidebarLinks}
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
+        onWidthChange={setSidebarW}
       />
 
       <Topbar onMenuToggle={() => setMobileOpen((o) => !o)} />
@@ -35,7 +42,10 @@ const EmployeeLayout = () => {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2, ease: 'easeOut' }}
-        className="pt-16 transition-all duration-300 lg:pl-60"
+        className={`
+          pt-16 transition-all duration-300
+          ${sidebarW <= 64 ? 'lg:pl-16' : 'lg:pl-60'}
+        `}
       >
         <div className="min-h-[calc(100vh-4rem)] p-6">
           <Outlet />

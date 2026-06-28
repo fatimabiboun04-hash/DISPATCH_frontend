@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useMemo, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import {
   addWeeks, startOfISOWeek, endOfISOWeek,
@@ -7,14 +7,6 @@ import {
 import { fr } from 'date-fns/locale'
 import { setHistoryWeekInfo } from '../features/planning/planningSlice'
 import { fetchPlanningHistoryThunk } from '../features/planning/planningThunks'
-
-/**
- * usePlanningHistory — week navigation for the read-only history view.
- *
- * Starts at current week - 1 (most recent past week).
- * Can only navigate into the past (no future navigation in history).
- * Builds the same `days` array structure used by the live planning grid.
- */
 
 const DAY_LABELS_SHORT = {
   'Mon': 'Lun', 'Tue': 'Mar', 'Wed': 'Mer',
@@ -32,7 +24,7 @@ const buildDays = (weekStart) =>
       label:     DAY_LABELS_SHORT[eng] || eng,
       dayNum:    format(date, 'd'),
       month:     format(date, 'MMM', { locale: fr }),
-      isToday:   false,   // never "today" in history view
+      isToday:   false,
       isWeekend: i >= 5,
     }
   })
@@ -40,10 +32,10 @@ const buildDays = (weekStart) =>
 export const usePlanningHistory = (weekDate, setWeekDate) => {
   const dispatch = useDispatch()
 
-  const weekStart = startOfISOWeek(weekDate)
-  const days      = buildDays(weekStart)
-  const weekNum   = getISOWeek(weekDate)
-  const year      = getISOWeekYear(weekDate)
+  const weekStart = useMemo(() => startOfISOWeek(weekDate), [weekDate])
+  const days      = useMemo(() => buildDays(weekStart), [weekStart])
+  const weekNum   = useMemo(() => getISOWeek(weekDate), [weekDate])
+  const year      = useMemo(() => getISOWeekYear(weekDate), [weekDate])
 
   const fetchHistoryWeek = useCallback((date, extraFilters = {}) => {
     const wn = getISOWeek(date)
@@ -57,13 +49,12 @@ export const usePlanningHistory = (weekDate, setWeekDate) => {
   }, [dispatch])
 
   const goToPrevWeek = useCallback(() => {
-    const prev = subWeeks(weekDate, 1)
+    const prev = sub(weekDate, 1)
     setWeekDate(prev)
     fetchHistoryWeek(prev)
   }, [weekDate, setWeekDate, fetchHistoryWeek])
 
   const goToNextWeek = useCallback(() => {
-    // Never navigate into future in history view
     const now  = new Date()
     const next = addWeeks(weekDate, 1)
     if (getISOWeek(next) >= getISOWeek(now) &&
@@ -72,16 +63,22 @@ export const usePlanningHistory = (weekDate, setWeekDate) => {
     fetchHistoryWeek(next)
   }, [weekDate, setWeekDate, fetchHistoryWeek])
 
-  const weekLabel = `Semaine ${weekNum} · ${format(weekStart, 'd MMM', { locale: fr })} – ${format(endOfISOWeek(weekDate), 'd MMM yyyy', { locale: fr })}`
+  const weekLabel = useMemo(() =>
+    `Semaine ${weekNum} · ${format(weekStart, 'd MMM', { locale: fr })} – ${format(endOfISOWeek(weekDate), 'd MMM yyyy', { locale: fr })}`,
+    [weekNum, weekStart, weekDate]
+  )
 
-  const isCurrentWeek =
+  const isCurrentWeek = useMemo(() =>
     getISOWeek(weekDate)     === getISOWeek(new Date()) &&
-    getISOWeekYear(weekDate) === getISOWeekYear(new Date())
+    getISOWeekYear(weekDate) === getISOWeekYear(new Date()),
+    [weekDate]
+  )
 
-  // Check if we can go forward (must be before current week)
-  const canGoForward =
+  const canGoForward = useMemo(() =>
     getISOWeek(weekDate)      < getISOWeek(new Date()) ||
-    getISOWeekYear(weekDate)  < getISOWeekYear(new Date())
+    getISOWeekYear(weekDate)  < getISOWeekYear(new Date()),
+    [weekDate]
+  )
 
   return {
     weekDate,

@@ -13,6 +13,8 @@ import { Modal, Input, Select, Button, FormField, Switch } from '../ui'
 import { getShiftColor }    from '../../constants/shiftColors'
 import { cn }               from '../../utils/cn'
 import toast                from 'react-hot-toast'
+import axiosInstance        from '../../services/axiosInstance'
+import { API }              from '../../constants/apiRoutes'
 
 /**
  * ShiftFormModal — create / edit shift.
@@ -73,6 +75,8 @@ const ShiftFormModal = ({
   const [customColor, setCustomColor] = useState(null)
   const [isActive,    setIsActive]    = useState(true)
   const [previewType, setPreviewType] = useState('day')
+  const [selectedSkills, setSelectedSkills] = useState([])
+  const [allSkills, setAllSkills] = useState([])
 
   const {
     register,
@@ -99,6 +103,15 @@ const ShiftFormModal = ({
     setPreviewType(watchedType || 'day')
   }, [watchedType])
 
+  // Fetch available skills
+  useEffect(() => {
+    if (open) {
+      axiosInstance.get(API.SKILLS.LIST).then((res) => {
+        setAllSkills(res.data.data || [])
+      }).catch(() => {})
+    }
+  }, [open])
+
   // Populate form when editing or opening
   useEffect(() => {
     if (open) {
@@ -114,6 +127,7 @@ const ShiftFormModal = ({
         setPreviewType(shift.type || 'day')
         setCustomColor(shift.color || null)
         setIsActive(shift.is_active ?? true)
+        setSelectedSkills(shift.skills?.map((s) => s.id) || [])
       } else {
         reset({
           name:          '',
@@ -125,6 +139,7 @@ const ShiftFormModal = ({
         setPreviewType('day')
         setCustomColor(null)
         setIsActive(true)
+        setSelectedSkills([])
       }
     }
   }, [open, isEdit, shift, reset, dispatch])
@@ -162,6 +177,7 @@ const ShiftFormModal = ({
       break_minutes: formData.break_minutes ?? 0,
       color:         customColor || null,
       is_active:     isActive,
+      skill_ids:     selectedSkills,
     }
 
     const action = isEdit
@@ -318,6 +334,34 @@ const ShiftFormModal = ({
             </div>
           </FormField>
         </div>
+
+        {/* Required Skills */}
+        {allSkills.length > 0 && (
+          <FormField label="Compétences requises" helper="Sélectionnez les compétences nécessaires pour ce shift">
+            <div className="flex flex-wrap gap-2">
+              {allSkills.map((skill) => {
+                const selected = selectedSkills.includes(skill.id)
+                return (
+                  <button
+                    key={skill.id}
+                    type="button"
+                    onClick={() => setSelectedSkills((prev) =>
+                      selected ? prev.filter((id) => id !== skill.id) : [...prev, skill.id]
+                    )}
+                    className={cn(
+                      'rounded-lg border px-3 py-1.5 text-xs font-medium transition-all',
+                      selected
+                        ? 'border-brand-400 bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400'
+                        : 'border-surface-200 text-slate-500 hover:border-slate-300 dark:border-dark-400 dark:text-slate-400'
+                    )}
+                  >
+                    {skill.name}
+                  </button>
+                )
+              })}
+            </div>
+          </FormField>
+        )}
 
         {/* Active toggle */}
         <div className="flex items-center justify-between rounded-xl

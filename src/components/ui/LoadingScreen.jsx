@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Zap } from 'lucide-react'
 
@@ -8,13 +8,19 @@ import { Zap } from 'lucide-react'
  */
 const LoadingScreen = ({ duration = 1800, onComplete }) => {
   const [visible, setVisible] = useState(true)
+  const innerTimer = useRef(null)
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setVisible(false)
-      setTimeout(onComplete, 400) // wait for fade-out
+      innerTimer.current = setTimeout(onComplete, 400)
     }, duration)
-    return () => clearTimeout(timer)
+    return () => {
+      clearTimeout(timer)
+      if (innerTimer.current) {
+        clearTimeout(innerTimer.current)
+      }
+    }
   }, [duration, onComplete])
 
   return (
@@ -74,4 +80,4 @@ const LoadingScreen = ({ duration = 1800, onComplete }) => {
   )
 }
 
-export default LoadingScreen
+export default memo(LoadingScreen)

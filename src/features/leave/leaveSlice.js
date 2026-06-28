@@ -48,6 +48,15 @@ const initialState = {
 
   // Per-request action loading (approve/reject)
   actionLoading: {},  // { [leaveId]: boolean }
+
+  // Per-request reject error
+  rejectError: null,
+
+  // Planning conflict data (from approve with no force)
+  approveConflict: null,  // { leaveId, conflicts, conflict_count }
+
+  // Approval result data (replacement suggestions after force-approve)
+  approveResult: null,  // { leaveId, planning_removed, replacement_suggestions }
 }
 
 const leaveSlice = createSlice({
@@ -62,6 +71,18 @@ const leaveSlice = createSlice({
     },
     clearSubmitError: (state) => {
       state.submitError = null
+    },
+    setApproveConflict: (state, action) => {
+      state.approveConflict = action.payload
+    },
+    clearApproveConflict: (state) => {
+      state.approveConflict = null
+    },
+    clearApproveResult: (state) => {
+      state.approveResult = null
+    },
+    clearRejectError: (state) => {
+      state.rejectError = null
     },
   },
   extraReducers: (builder) => {
@@ -102,22 +123,43 @@ const leaveSlice = createSlice({
     // ── Admin: approve ─────────────────────────────────────
     builder
       .addCase(approveLeaveThunk.pending, (state, action) => {
-        state.actionLoading[action.meta.arg] = true
+        const leaveId = typeof action.meta.arg === 'object' ? action.meta.arg.id : action.meta.arg
+        state.actionLoading[leaveId] = true
       })
       .addCase(approveLeaveThunk.fulfilled, (state, action) => {
-        state.actionLoading[action.payload.id] = false
+        // New response shape: { leave_request, planning_removed, replacement_suggestions }
+        const leaveRequest = action.payload.leave_request || action.payload
+        state.actionLoading[leaveRequest.id] = false
+        // Store approval result (replacement suggestions)
+        if (action.payload.replacement_suggestions) {
+          state.approveResult = {
+            leaveId: leaveRequest.id,
+            planning_removed: action.payload.planning_removed || 0,
+            replacement_suggestions: action.payload.replacement_suggestions || [],
+          }
+        }
         // Update in admin list
-        const idx = state.adminList.findIndex((l) => l.id === action.payload.id)
-        if (idx >= 0) state.adminList[idx] = action.payload
+        const idx = state.adminList.findIndex((l) => l.id === leaveRequest.id)
+        if (idx >= 0) state.adminList[idx] = leaveRequest
       })
       .addCase(approveLeaveThunk.rejected, (state, action) => {
-        state.actionLoading[action.meta.arg] = false
+        const leaveId = typeof action.meta.arg === 'object' ? action.meta.arg.id : action.meta.arg
+        state.actionLoading[leaveId] = false
+        // If conflict, store for UI
+        if (action.payload?.isConflict) {
+          state.approveConflict = {
+            leaveId,
+            conflicts: action.payload.conflicts || [],
+            conflict_count: action.payload.conflict_count || 0,
+          }
+        }
       })
 
     // ── Admin: reject ──────────────────────────────────────
     builder
       .addCase(rejectLeaveThunk.pending, (state, action) => {
         state.actionLoading[action.meta.arg.id] = true
+        state.rejectError = null
       })
       .addCase(rejectLeaveThunk.fulfilled, (state, action) => {
         state.actionLoading[action.payload.id] = false
@@ -126,6 +168,7 @@ const leaveSlice = createSlice({
       })
       .addCase(rejectLeaveThunk.rejected, (state, action) => {
         state.actionLoading[action.meta.arg.id] = false
+        state.rejectError = action.payload
       })
 
     // ── Employee: fetch own ────────────────────────────────
@@ -150,6 +193,10 @@ export const {
   setAdminFilters,
   resetAdminFilters,
   clearSubmitError,
+  setApproveConflict,
+  clearApproveConflict,
+  clearApproveResult,
+  clearRejectError,
 } = leaveSlice.actions
 
 export default leaveSlice.reducer

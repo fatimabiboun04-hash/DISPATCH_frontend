@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, memo } from 'react'
 import { Search, X } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
@@ -67,4 +67,4 @@ const SearchInput = ({
   )
 }
 
-export default SearchInput
+export default memo(SearchInput)

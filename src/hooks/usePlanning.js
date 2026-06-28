@@ -1,20 +1,10 @@
-import { useCallback } from 'react'
+import { useMemo, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { addWeeks, subWeeks, startOfISOWeek, endOfISOWeek, format, getISOWeek, getISOWeekYear } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { setWeekInfo } from '../features/planning/planningSlice'
-import { selectWeekInfo } from '../features/planning/planningSelectors'
+import { selectWeekInfo, selectPlanningFilters } from '../features/planning/planningSelectors'
 import { fetchPlanningThunk } from '../features/planning/planningThunks'
-
-/**
- * usePlanning — week navigation and fetch orchestration.
- *
- * Provides:
- * - currentWeekDate: Date object of Monday of the viewed week
- * - days: array of 7 { date: 'YYYY-MM-DD', label: 'Lun', dayNum, isToday } objects
- * - goToNextWeek / goToPrevWeek / goToCurrentWeek
- * - fetchCurrentWeek(filters) — triggers API call
- */
 
 const DAY_LABELS_SHORT = {
   'Mon': 'Lun', 'Tue': 'Mar', 'Wed': 'Mer',
@@ -26,7 +16,7 @@ const buildDays = (weekStart) => {
     const date = new Date(weekStart)
     date.setDate(weekStart.getDate() + i)
     const iso  = format(date, 'yyyy-MM-dd')
-    const eng  = format(date, 'EEE')  // 'Mon', 'Tue', ...
+    const eng  = format(date, 'EEE')
     const today = format(new Date(), 'yyyy-MM-dd')
     return {
       date:    iso,
@@ -42,11 +32,12 @@ const buildDays = (weekStart) => {
 export const usePlanning = (weekDate, setWeekDate) => {
   const dispatch  = useDispatch()
   const weekInfo  = useSelector(selectWeekInfo)
+  const filters   = useSelector(selectPlanningFilters)
 
-  const weekStart = startOfISOWeek(weekDate)
-  const days      = buildDays(weekStart)
-  const weekNum   = getISOWeek(weekDate)
-  const year      = getISOWeekYear(weekDate)
+  const weekStart = useMemo(() => startOfISOWeek(weekDate), [weekDate])
+  const days      = useMemo(() => buildDays(weekStart), [weekStart])
+  const weekNum   = useMemo(() => getISOWeek(weekDate), [weekDate])
+  const year      = useMemo(() => getISOWeekYear(weekDate), [weekDate])
 
   const fetchWeek = useCallback((date, extraFilters = {}) => {
     const wn = getISOWeek(date)
@@ -62,22 +53,37 @@ export const usePlanning = (weekDate, setWeekDate) => {
   const goToNextWeek = useCallback(() => {
     const next = addWeeks(weekDate, 1)
     setWeekDate(next)
-    fetchWeek(next)
-  }, [weekDate, setWeekDate, fetchWeek])
+    fetchWeek(next, {
+      team_id:  filters.team_id  || undefined,
+      shift_id: filters.shift_id || undefined,
+      user_id:  filters.user_id  || undefined,
+    })
+  }, [weekDate, setWeekDate, fetchWeek, filters])
 
   const goToPrevWeek = useCallback(() => {
     const prev = subWeeks(weekDate, 1)
     setWeekDate(prev)
-    fetchWeek(prev)
-  }, [weekDate, setWeekDate, fetchWeek])
+    fetchWeek(prev, {
+      team_id:  filters.team_id  || undefined,
+      shift_id: filters.shift_id || undefined,
+      user_id:  filters.user_id  || undefined,
+    })
+  }, [weekDate, setWeekDate, fetchWeek, filters])
 
   const goToCurrentWeek = useCallback(() => {
     const today = new Date()
     setWeekDate(today)
-    fetchWeek(today)
-  }, [setWeekDate, fetchWeek])
+    fetchWeek(today, {
+      team_id:  filters.team_id  || undefined,
+      shift_id: filters.shift_id || undefined,
+      user_id:  filters.user_id  || undefined,
+    })
+  }, [setWeekDate, fetchWeek, filters])
 
-  const weekLabel = `Semaine ${weekNum} · ${format(weekStart, 'd MMM', { locale: fr })} – ${format(endOfISOWeek(weekDate), 'd MMM yyyy', { locale: fr })}`
+  const weekLabel = useMemo(() =>
+    `Semaine ${weekNum} · ${format(weekStart, 'd MMM', { locale: fr })} – ${format(endOfISOWeek(weekDate), 'd MMM yyyy', { locale: fr })}`,
+    [weekNum, weekStart, weekDate]
+  )
 
   return {
     weekDate,

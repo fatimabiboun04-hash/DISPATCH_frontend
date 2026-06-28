@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { cn } from '../../utils/cn'
 import { getAvatarColor } from '../../utils/avatarGenerator'
 
@@ -43,4 +44,4 @@ const SkillBadge = ({ name, level, category, showLevel = false, className }) => 
   )
 }
 
-export default SkillBadge
+export default memo(SkillBadge)

@@ -30,6 +30,17 @@ const pauseService = {
   },
 
   /**
+   * GET /v1/pauses/batch?planning_ids=1,2,3
+   * Returns { [planningId]: [...pauses] } grouped by planning_id.
+   */
+  batchGetByPlanning: async (planningIds) => {
+    const res = await axiosInstance.get(API.PAUSES.BATCH, {
+      params: { planning_ids: planningIds.join(',') },
+    })
+    return res.data.data  // { [planningId]: [...] }
+  },
+
+  /**
    * POST /v1/pauses
    * For single user: { planning_id, pause_start, pause_end, user_id }
    * For team:        { planning_id, pause_start, pause_end, team_id }
@@ -57,6 +68,22 @@ const pauseService = {
   delete: async (id) => {
     const res = await axiosInstance.delete(API.PAUSES.DELETE(id))
     return res.data  // { success: true, data: null, message: 'Pause deleted' }
+  },
+
+  /**
+   * POST /v1/me/pauses/start — employee self-start pause
+   */
+  startMyPause: async () => {
+    const res = await axiosInstance.post(API.PAUSES.START_MY)
+    return res.data.data
+  },
+
+  /**
+   * POST /v1/me/pauses/stop — employee self-stop pause
+   */
+  stopMyPause: async () => {
+    const res = await axiosInstance.post(API.PAUSES.STOP_MY)
+    return res.data.data
   },
 }
 

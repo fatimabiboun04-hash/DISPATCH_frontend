@@ -1,23 +1,24 @@
-import { forwardRef } from 'react'
+import { forwardRef, useId, memo } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
-/**
- * Select — native HTML select with custom styling.
- * Simple, accessible, works with react-hook-form.
- * For complex multi-selects use Modal + checkboxes.
- */
 const Select = forwardRef(({
   label,
   error,
   helper,
-  options = [],     // [{ value, label, disabled? }]
+  options = [],
   placeholder,
   className,
   containerClassName,
   size = 'md',
+  id: externalId,
   ...props
 }, ref) => {
+  const generatedId = useId()
+  const selectId = externalId || generatedId
+  const errorId = `${selectId}-error`
+  const helperId = `${selectId}-helper`
+
   const sizes = {
     sm: 'h-8 pl-3 pr-8 text-xs',
     md: 'h-10 pl-3 pr-8 text-sm',
@@ -27,7 +28,7 @@ const Select = forwardRef(({
   return (
     <div className={cn('flex flex-col gap-1.5', containerClassName)}>
       {label && (
-        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+        <label htmlFor={selectId} className="text-xs font-medium text-slate-700 dark:text-slate-300">
           {label}
           {props.required && <span className="ml-0.5 text-red-500">*</span>}
         </label>
@@ -35,6 +36,11 @@ const Select = forwardRef(({
       <div className="relative">
         <select
           ref={ref}
+          id={selectId}
+          aria-invalid={!!error || undefined}
+          aria-describedby={
+            error ? errorId : helper ? helperId : undefined
+          }
           className={cn(
             'w-full appearance-none rounded-lg border bg-white',
             'text-slate-900 transition-all duration-150 outline-none',
@@ -62,11 +68,11 @@ const Select = forwardRef(({
         <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2
                                  -translate-y-1/2 h-4 w-4 text-slate-400" />
       </div>
-      {error  && <p className="text-xs text-red-500">{error}</p>}
-      {!error && helper && <p className="text-xs text-slate-400">{helper}</p>}
+      {error  && <p id={errorId} className="text-xs text-red-500">{error}</p>}
+      {!error && helper && <p id={helperId} className="text-xs text-slate-400">{helper}</p>}
     </div>
   )
 })
 
 Select.displayName = 'Select'
-export default Select
+export default memo(Select)

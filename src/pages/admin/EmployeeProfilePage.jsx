@@ -27,10 +27,10 @@ import ActivityTimeline    from '../../components/employees/ActivityTimeline'
 import EmployeeFormModal   from '../../components/employees/EmployeeFormModal'
 import {
   Tabs, Button, Card, Skeleton, ErrorState,
-  Badge, Avatar,
+  Badge,
 } from '../../components/ui'
 import { formatDate, formatTime, formatMinutesToHours } from '../../utils/formatters'
-//import { getShiftColor } from '../../constants/shiftColors'
+import { getShiftColor } from '../../constants/shiftColors'
 import { cn } from '../../utils/cn'
 import axiosInstance from '../../services/axiosInstance'
 import { API } from '../../constants/apiRoutes'
@@ -115,7 +115,7 @@ const EmployeeProfilePage = () => {
       try {
         const [teamsRes, skillsRes] = await Promise.all([
           axiosInstance.get(API.TEAMS.LIST),
-          axiosInstance.get('/v1/skills'),
+          axiosInstance.get(API.SKILLS.LIST),
         ])
         setTeams(teamsRes.data.data || [])
         setSkills(skillsRes.data.data || [])

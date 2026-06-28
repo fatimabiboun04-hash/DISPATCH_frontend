@@ -44,3 +44,14 @@ export const fetchActivePausesThunk = createAsyncThunk(
     }
   }
 )
+
+export const fetchWeeklyHistoryThunk = createAsyncThunk(
+  'dashboard/fetchWeeklyHistory',
+  async (_, { rejectWithValue }) => {
+    try {
+      return await dashboardService.getWeeklyHistory()
+    } catch (err) {
+      return rejectWithValue(err.message || 'Failed to load weekly history')
+    }
+  }
+)

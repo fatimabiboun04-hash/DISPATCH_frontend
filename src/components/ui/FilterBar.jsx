@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { SlidersHorizontal } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
@@ -34,4 +35,4 @@ const FilterBar = ({
   </div>
 )
 
-export default FilterBar
+export default memo(FilterBar)

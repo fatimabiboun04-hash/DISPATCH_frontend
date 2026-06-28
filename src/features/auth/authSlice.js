@@ -14,8 +14,11 @@ import { loginThunk, logoutThunk } from './authThunks'
 const storedToken = localStorage.getItem('dispatch_token')
 const storedUser  = localStorage.getItem('dispatch_user')
 
+let parsedUser = null
+try { parsedUser = storedUser ? JSON.parse(storedUser) : null } catch { parsedUser = null }
+
 const initialState = {
-  user:    storedUser  ? JSON.parse(storedUser)  : null,
+  user:    parsedUser,
   token:   storedToken || null,
   loading: false,
   error:   null,

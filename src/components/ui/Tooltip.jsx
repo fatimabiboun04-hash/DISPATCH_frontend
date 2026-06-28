@@ -1,13 +1,8 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useId, memo } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '../../utils/cn'
 
-/**
- * Tooltip — lightweight contextual tooltip.
- * Positions itself above the trigger by default.
- * Used on icon-only buttons throughout the app.
- */
 const Tooltip = ({
   children,
   content,
@@ -17,6 +12,7 @@ const Tooltip = ({
   const [visible, setVisible] = useState(false)
   const [pos,     setPos]     = useState({ x: 0, y: 0 })
   const triggerRef            = useRef(null)
+  const tooltipId             = useId()
 
   const updatePosition = () => {
     if (!triggerRef.current) return
@@ -39,6 +35,9 @@ const Tooltip = ({
         ref={triggerRef}
         onMouseEnter={() => setVisible(true)}
         onMouseLeave={() => setVisible(false)}
+        onFocus={() => setVisible(true)}
+        onBlur={() => setVisible(false)}
+        aria-describedby={tooltipId}
         className="inline-flex"
       >
         {children}
@@ -49,6 +48,8 @@ const Tooltip = ({
           {visible && (
             <motion.div
               key="tooltip"
+              id={tooltipId}
+              role="tooltip"
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 4 }}
@@ -64,17 +65,16 @@ const Tooltip = ({
                 'pointer-events-none rounded-lg px-2.5 py-1.5',
                 'bg-slate-800 text-xs font-medium text-white',
                 'shadow-strong whitespace-nowrap',
-                'dark:bg-slate-700',
+                'dark:bg-dark-600',
                 className
               )}
             >
               {content}
-              {/* Arrow */}
               <div className="absolute left-1/2 top-full h-0 w-0
                               -translate-x-1/2
                               border-x-4 border-t-4
                               border-x-transparent border-t-slate-800
-                              dark:border-t-slate-700" />
+                              dark:border-t-dark-600" />
             </motion.div>
           )}
         </AnimatePresence>,
@@ -84,4 +84,4 @@ const Tooltip = ({
   )
 }
 
-export default Tooltip
+export default memo(Tooltip)

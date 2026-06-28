@@ -6,14 +6,13 @@ import { zodResolver }         from '@hookform/resolvers/zod'
 import { motion }              from 'framer-motion'
 import { useAuth }             from '../../hooks/useAuth'
 import profileService          from '../../services/profileService'
-import AvatarUploader          from '../../components/employees/AvatarUploader'
-import { clearAuth }           from '../../features/auth/authSlice'
+import AvatarUploader          from './AvatarUploader'
 import {
-  Input, Button, Card, HoursBar, Badge,
+  Input, Button, Card, HoursBar,
   RatingBadge, SkillBadge, Skeleton, Tabs,
+  ErrorState,
 } from '../../components/ui'
 import { getHoursClasses }     from '../../utils/hoursColor'
-import { formatDate }          from '../../utils/formatters'
 import { differenceInMonths, parseISO, isValid } from 'date-fns'
 import toast                   from 'react-hot-toast'
 import { cn }                  from '../../utils/cn'
@@ -61,6 +60,7 @@ const MyProfilePage = () => {
 
   const [profile,    setProfile]    = useState(null)
   const [loading,    setLoading]    = useState(true)
+  const [loadError,  setLoadError]  = useState(null)
   const [saving,     setSaving]     = useState(false)
   const [avatarFile, setAvatarFile] = useState(null)
   const [activeTab,  setActiveTab]  = useState('info')
@@ -91,7 +91,7 @@ const MyProfilePage = () => {
           phone:       data.profile?.phone       || '',
           description: data.profile?.description || '',
         })
-      } catch {} finally { setLoading(false) }
+      } catch (err) { setLoadError(err.message || 'Erreur lors du chargement du profil') } finally { setLoading(false) }
     }
     fetch()
   }, []) // eslint-disable-line
@@ -143,6 +143,10 @@ const MyProfilePage = () => {
   const currentRating= profile?.current_rating
   const userData     = profile?.profile
   const hoursClasses = stats ? getHoursClasses(stats.weekly_hours) : null
+
+  if (loadError) {
+    return <ErrorState message={loadError} onRetry={() => window.location.reload()} />
+  }
 
   if (loading) {
     return (

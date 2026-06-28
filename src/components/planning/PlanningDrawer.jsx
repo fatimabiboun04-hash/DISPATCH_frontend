@@ -9,6 +9,7 @@ import { fetchPausesByPlanningThunk } from '../../features/pauses/pauseThunks'
 import {
   deletePlanningThunk,
   createPlanningThunk,
+  lockPlanningThunk,
   overrideLockThunk,
 } from '../../features/planning/planningThunks'
 import {
@@ -16,7 +17,7 @@ import {
 } from '../../features/planning/planningSelectors'
 import SmartSuggestionList from './SmartSuggestionList'
 import PauseLayer          from './PauseLayer'
-import { Drawer, Avatar, Badge, Button, HoursBar, RatingBadge,
+import { Drawer, Avatar, Badge, Button,
          ConfirmDialog, Tooltip } from '../ui'
 import { getShiftColor }   from '../../constants/shiftColors'
 import { formatDate }      from '../../utils/formatters'
@@ -55,6 +56,7 @@ const PlanningDrawer = ({
   const [deleteOpen,      setDeleteOpen]      = useState(false)
   const [deleting,        setDeleting]        = useState(false)
   const [overriding,      setOverriding]      = useState(false)
+  const [locking,         setLocking]         = useState(false)
 
   const shiftColor = planning ? getShiftColor(planning.shift?.type) : null
 
@@ -116,6 +118,19 @@ const PlanningDrawer = ({
     }
   }
 
+  // Handle individual lock
+  const handleLockPlanning = async () => {
+    setLocking(true)
+    const result = await dispatch(lockPlanningThunk(planning.id))
+    setLocking(false)
+    if (lockPlanningThunk.fulfilled.match(result)) {
+      toast.success('Assignation verrouillée')
+      onRefresh?.()
+    } else {
+      toast.error('Erreur lors du verrouillage')
+    }
+  }
+
   return (
     <>
       <Drawer
@@ -126,7 +141,7 @@ const PlanningDrawer = ({
         subtitle={`Semaine ${planning.week_number}`}
         footer={
           <div className="flex w-full items-center justify-between">
-            {/* Lock override */}
+            {/* Lock / Unlock */}
             {isLocked ? (
               <Tooltip content="Débloquer cette assignation">
                 <Button
@@ -140,7 +155,17 @@ const PlanningDrawer = ({
                 </Button>
               </Tooltip>
             ) : (
-              <div /> // spacer
+              <Tooltip content="Verrouiller cette assignation">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  leftIcon={<Lock className="h-3.5 w-3.5" />}
+                  loading={locking}
+                  onClick={handleLockPlanning}
+                >
+                  Verrouiller
+                </Button>
+              </Tooltip>
             )}
 
             {/* Delete — disabled on locked */}
@@ -246,7 +271,6 @@ const PlanningDrawer = ({
                   <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
                     {planning.user.name}
                   </p>
-                  <p className="text-xs text-slate-400">{planning.user.email}</p>
                 </div>
               </div>
             ) : (

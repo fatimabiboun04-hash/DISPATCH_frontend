@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { cn } from '../../utils/cn'
 
 /**
@@ -33,4 +34,4 @@ const RatingBadge = ({ type, showLabel = true, size = 'md', className }) => {
   )
 }
 
-export default RatingBadge
+export default memo(RatingBadge)

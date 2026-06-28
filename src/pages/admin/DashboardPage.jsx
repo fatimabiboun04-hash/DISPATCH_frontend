@@ -7,6 +7,7 @@ import {
   fetchLiveFeedThunk,
   fetchCoverageThunk,
   fetchActivePausesThunk,
+  fetchWeeklyHistoryThunk,
 } from '../../features/dashboard/dashboardThunks'
 import { setLastRefreshed } from '../../features/dashboard/dashboardSlice'
 
@@ -39,6 +40,7 @@ const DashboardPage = () => {
     dispatch(fetchLiveFeedThunk())
     dispatch(fetchCoverageThunk())
     dispatch(fetchActivePausesThunk())
+    dispatch(fetchWeeklyHistoryThunk())
     dispatch(setLastRefreshed())
   }, [dispatch])
 

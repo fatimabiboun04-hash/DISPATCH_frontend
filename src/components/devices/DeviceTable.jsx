@@ -1,7 +1,7 @@
 import { useEffect, useState }      from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { motion }                   from 'framer-motion'
-import { Monitor, Smartphone, Globe } from 'lucide-react'
+import { Monitor } from 'lucide-react'
 import { fetchDevicesThunk }        from '../../features/devices/deviceThunks'
 import {
   selectDeviceList,
@@ -12,7 +12,7 @@ import {
 import DeviceStatusBadge from './DeviceStatusBadge'
 import DeviceActions     from './DeviceActions'
 import { Avatar, Skeleton, EmptyState, ErrorState, Pagination } from '../ui'
-import { formatRelative, formatDate } from '../../utils/formatters'
+import { formatRelative } from '../../utils/formatters'
 
 /**
  * DeviceTable — paginated list of registered devices.

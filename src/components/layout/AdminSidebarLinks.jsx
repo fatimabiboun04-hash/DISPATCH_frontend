@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Users, UsersRound, CalendarDays,
   Clock, FileText, BarChart3, History,
-  Settings, Shield, ChevronRight,  Timer,
+  Settings, Shield, ChevronRight,  Timer, ListChecks, Wrench,
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
@@ -17,6 +17,8 @@ const LINKS = [
   { to: '/admin/reports',        icon: BarChart3,       label: 'Rapports'        },
   { to: '/admin/history',        icon: History,         label: 'Historique'      },
   { to: '/admin/devices',        icon: Shield,          label: 'Appareils'       },
+  { to: '/admin/tasks',          icon: ListChecks,     label: 'Tâches'          },
+  { to: '/admin/skills',         icon: Wrench,          label: 'Compétences'     },
   { to: '/admin/settings',       icon: Settings,        label: 'Paramètres'      },
 ]
 

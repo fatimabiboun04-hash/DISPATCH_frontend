@@ -6,7 +6,6 @@ import { usePlanningHistory }   from '../../hooks/usePlanningHistory'
 import {
   selectHistoryData,
   selectHistoryLoading,
-  selectLockedCount,
 } from '../../features/planning/planningSelectors'
 import { clearHistory } from '../../features/planning/planningSlice'
 import HistoryWeekSelector  from '../../components/planning/HistoryWeekSelector'
@@ -45,7 +44,6 @@ const PlanningHistoryPage = () => {
 
   const historyData  = useSelector(selectHistoryData)
   const loading      = useSelector(selectHistoryLoading)
-  const lockedCount  = useSelector(selectLockedCount)
 
   // Fetch on mount (last week)
   useEffect(() => {

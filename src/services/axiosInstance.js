@@ -50,17 +50,19 @@ axiosInstance.interceptors.response.use(
     }
 
     // 403 with locked:true — suspended account
-    if (status === 403 && error.response?.data?.data?.locked) {
-      const reason = error.response.data.data.reason || ''
+    const responseBody = error.response?.data
+    const isLocked = responseBody?.locked || responseBody?.data?.locked || responseBody?.errors?.locked || false
+    if (status === 403 && isLocked) {
+      const reason = responseBody?.reason || responseBody?.errors?.reason || ''
       window.location.href = `/lockout?reason=${encodeURIComponent(reason)}`
     }
 
     // Normalize error for services to use
     return Promise.reject({
       status,
-      message:    error.response?.data?.message || 'An unexpected error occurred.',
-      errors:     error.response?.data?.errors  || {},
-      data:       error.response?.data?.data    || null,
+      message:    responseBody?.message || 'An unexpected error occurred.',
+      errors:     responseBody?.errors  || {},
+      data:       responseBody?.data    || responseBody || null,
       rawError:   error,
     })
   }

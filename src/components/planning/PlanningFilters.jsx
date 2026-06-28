@@ -1,5 +1,4 @@
 import { useDispatch, useSelector } from 'react-redux'
-import { useSelector as useSel }    from 'react-redux'
 import { setFilters, resetFilters } from '../../features/planning/planningSlice'
 import { selectPlanningFilters }    from '../../features/planning/planningSelectors'
 import { selectTeamList } from '../../features/teams/teamSelectors'
@@ -17,8 +16,8 @@ import { X } from 'lucide-react'
 const PlanningFilters = ({ employees = [], onFiltersChange }) => {
   const dispatch = useDispatch()
   const filters  = useSelector(selectPlanningFilters)
-  const teams = useSel(selectTeamList) // from teamSlice — gap fix #7 (shared auth)
-  const shifts   = useSel(selectActiveShifts)
+  const teams = useSelector(selectTeamList)
+  const shifts   = useSelector(selectActiveShifts)
 
   const teamOptions = [
     { value: '', label: 'Toutes les équipes' },

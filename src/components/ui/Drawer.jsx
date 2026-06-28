@@ -1,15 +1,8 @@
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useId, memo } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 import { cn } from '../../utils/cn'
-
-/**
- * Drawer — right-side sliding panel.
- * Used primarily by PlanningCard → PlanningDrawer (Phase 9).
- *
- * Sizes: sm(320) | md(480) | lg(600) | xl(720)
- */
 
 const WIDTHS = {
   sm: 'w-80',
@@ -28,6 +21,8 @@ const Drawer = ({
   size = 'md',
   className,
 }) => {
+  const titleId = useId()
+
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Escape') onClose()
   }, [onClose])
@@ -47,7 +42,6 @@ const Drawer = ({
     <AnimatePresence>
       {open && (
         <>
-          {/* Backdrop */}
           <motion.div
             key="drawer-backdrop"
             initial={{ opacity: 0 }}
@@ -58,9 +52,11 @@ const Drawer = ({
             className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
           />
 
-          {/* Panel */}
           <motion.div
             key="drawer-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={title ? titleId : undefined}
             initial={{ x: '100%' }}
             animate={{ x: 0     }}
             exit={{   x: '100%' }}
@@ -73,13 +69,12 @@ const Drawer = ({
               className
             )}
           >
-            {/* Header */}
             <div className="flex flex-shrink-0 items-start justify-between
                             border-b border-surface-100 px-5 py-4
                             dark:border-dark-600">
               <div>
                 {title && (
-                  <h2 className="text-base font-semibold
+                  <h2 id={titleId} className="text-base font-semibold
                                  text-slate-800 dark:text-slate-100">
                     {title}
                   </h2>
@@ -90,6 +85,7 @@ const Drawer = ({
               </div>
               <button
                 onClick={onClose}
+                aria-label="Fermer"
                 className="ml-4 flex h-7 w-7 flex-shrink-0 items-center
                            justify-center rounded-lg text-slate-400
                            transition-colors hover:bg-surface-100
@@ -99,12 +95,10 @@ const Drawer = ({
               </button>
             </div>
 
-            {/* Body — scrollable */}
             <div className="flex-1 overflow-y-auto px-5 py-4">
               {children}
             </div>
 
-            {/* Footer */}
             {footer && (
               <div className="flex flex-shrink-0 items-center justify-end gap-3
                               border-t border-surface-100 px-5 py-4
@@ -120,4 +114,4 @@ const Drawer = ({
   )
 }
 
-export default Drawer
+export default memo(Drawer)

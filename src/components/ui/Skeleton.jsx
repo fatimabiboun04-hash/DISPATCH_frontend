@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { cn } from '../../utils/cn'
 
 /**
@@ -8,25 +9,25 @@ import { cn } from '../../utils/cn'
  */
 
 // Single shimmer block
-const SkeletonBlock = ({ className }) => (
+const SkeletonBlock = memo(({ className }) => (
   <div className={cn(
     'shimmer rounded',
     className
   )} />
-)
+))
 
 // Preset: text line
-const SkeletonLine = ({ width = 'w-full', height = 'h-4', className }) => (
+const SkeletonLine = memo(({ width = 'w-full', height = 'h-4', className }) => (
   <SkeletonBlock className={cn(width, height, className)} />
-)
+))
 
 // Preset: circle (avatar)
-const SkeletonCircle = ({ size = 'h-10 w-10', className }) => (
+const SkeletonCircle = memo(({ size = 'h-10 w-10', className }) => (
   <SkeletonBlock className={cn('rounded-full flex-shrink-0', size, className)} />
-)
+))
 
 // Preset: stat card
-const SkeletonCard = ({ className }) => (
+const SkeletonCard = memo(({ className }) => (
   <div className={cn(
     'rounded-xl border border-surface-200 bg-white p-4',
     'dark:border-dark-600 dark:bg-dark-700',
@@ -39,10 +40,10 @@ const SkeletonCard = ({ className }) => (
     <SkeletonBlock className="mb-1.5 h-8 w-20" />
     <SkeletonBlock className="h-3 w-32" />
   </div>
-)
+))
 
 // Preset: table row
-const SkeletonRow = ({ cols = 5, className }) => (
+const SkeletonRow = memo(({ cols = 5, className }) => (
   <div className={cn(
     'flex items-center gap-4 px-4 py-3',
     className
@@ -55,7 +56,7 @@ const SkeletonRow = ({ cols = 5, className }) => (
       />
     ))}
   </div>
-)
+))
 
 // Compound export
 const Skeleton = {

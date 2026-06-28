@@ -7,7 +7,6 @@ import {
   selectPlanningByDate,
   selectPlanningLoading,
   selectHasLockedRecords,
-  selectPlanningData,
 } from '../../features/planning/planningSelectors'
 import { cn }          from '../../utils/cn'
 
@@ -25,7 +24,6 @@ const PlanningGrid = ({
   className,
 }) => {
   const planningByDate = useSelector(selectPlanningByDate)
-  const allPlannings   = useSelector(selectPlanningData)
   const loading        = useSelector(selectPlanningLoading)
   const hasLocked      = useSelector(selectHasLockedRecords)
 
@@ -50,10 +48,7 @@ const PlanningGrid = ({
       transition={{ duration: 0.3 }}
       className={cn('overflow-x-auto pb-4', className)}
     >
-      <DragDropWrapper
-        plannings={allPlannings}
-        onRefresh={onRefresh}
-      >
+      <DragDropWrapper onRefresh={onRefresh}>
         <div className="grid min-w-[896px] grid-cols-7 gap-3">
           {days.map((day) => (
             <DroppableDayColumn

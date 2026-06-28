@@ -4,15 +4,17 @@ import {
   fetchLiveFeedThunk,
   fetchCoverageThunk,
   fetchActivePausesThunk,
+  fetchWeeklyHistoryThunk,
 } from './dashboardThunks'
 
 /**
  * Dashboard state — matches exact backend response shapes:
  *
- * stats:        GET /v1/dashboard/stats       → { coverage, delays_today, ... }
- * liveFeed:     GET /v1/dashboard/live-feed   → array of events
- * coverage:     GET /v1/dashboard/coverage    → array of 7 day objects
- * activePauses: GET /v1/dashboard/active-pauses → { count, pauses[] }
+ * stats:         GET /v1/dashboard/stats           → { coverage, delays_today, ... }
+ * liveFeed:      GET /v1/dashboard/live-feed       → array of events
+ * coverage:      GET /v1/dashboard/coverage        → array of 7 day objects
+ * activePauses:  GET /v1/dashboard/active-pauses   → { count, pauses[] }
+ * weeklyHistory: GET /v1/dashboard/weekly-history  → array of snapshot objects
  */
 const initialState = {
   // Stats KPIs
@@ -34,6 +36,11 @@ const initialState = {
   activePauses: { count: 0, pauses: [] },
   activePausesLoading: false,
   activePausesError: null,
+
+  // Weekly history (snapshots)
+  weeklyHistory: [],
+  weeklyHistoryLoading: false,
+  weeklyHistoryError: null,
 
   // Timestamp of last full refresh
   lastRefreshed: null,
@@ -107,6 +114,21 @@ const dashboardSlice = createSlice({
       .addCase(fetchActivePausesThunk.rejected, (state, action) => {
         state.activePausesLoading = false
         state.activePausesError   = action.payload
+      })
+
+    // ── Weekly History ──────────────────────────────────────
+    builder
+      .addCase(fetchWeeklyHistoryThunk.pending, (state) => {
+        state.weeklyHistoryLoading = true
+        state.weeklyHistoryError   = null
+      })
+      .addCase(fetchWeeklyHistoryThunk.fulfilled, (state, action) => {
+        state.weeklyHistoryLoading = false
+        state.weeklyHistory        = action.payload
+      })
+      .addCase(fetchWeeklyHistoryThunk.rejected, (state, action) => {
+        state.weeklyHistoryLoading = false
+        state.weeklyHistoryError   = action.payload
       })
   },
 })

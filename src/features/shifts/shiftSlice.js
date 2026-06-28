@@ -101,10 +101,19 @@ const shiftSlice = createSlice({
     // Returns successResponse(null) so payload is null
     // We update the shift's is_active in the local list
     builder
+      .addCase(deactivateShiftThunk.pending, (state) => {
+        state.submitting  = true
+        state.submitError = null
+      })
       .addCase(deactivateShiftThunk.fulfilled, (state, action) => {
+        state.submitting = false
         // action.payload = shiftId (we pass it through)
         const idx = state.list.findIndex((s) => s.id === action.payload)
         if (idx >= 0) state.list[idx].is_active = false
+      })
+      .addCase(deactivateShiftThunk.rejected, (state, action) => {
+        state.submitting  = false
+        state.submitError = action.payload
       })
   },
 })

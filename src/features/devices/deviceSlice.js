@@ -58,6 +58,7 @@ const deviceSlice = createSlice({
       })
       .addCase(trustDeviceThunk.rejected, (state, action) => {
         state.actionLoading[action.meta.arg] = false
+        state.error = action.payload
       })
 
     // ── Untrust ────────────────────────────────────────────
@@ -72,6 +73,7 @@ const deviceSlice = createSlice({
       })
       .addCase(untrustDeviceThunk.rejected, (state, action) => {
         state.actionLoading[action.meta.arg] = false
+        state.error = action.payload
       })
   },
 })

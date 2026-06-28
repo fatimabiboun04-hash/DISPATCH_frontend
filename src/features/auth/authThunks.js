@@ -15,8 +15,8 @@ export const loginThunk = createAsyncThunk(
     } catch (err) {
       return rejectWithValue({
         message: err.message || 'Identifiants incorrects.',
-        locked:  err.data?.locked || false,
-        reason:  err.data?.reason || '',
+        locked:  err.data?.locked || err.errors?.locked || false,
+        reason:  err.data?.reason || err.errors?.reason || '',
       })
     }
   }
@@ -28,12 +28,13 @@ export const loginThunk = createAsyncThunk(
  */
 export const logoutThunk = createAsyncThunk(
   'auth/logout',
-  async (_, { rejectWithValue }) => {
+  async (_, { dispatch }) => {
     try {
       await authService.logout()
     } catch {
       // Logout always succeeds on the frontend even if API fails
     }
+    dispatch({ type: 'app/resetAll' })
     return null
   }
 )

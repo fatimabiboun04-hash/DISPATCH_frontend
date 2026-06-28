@@ -1,37 +1,36 @@
+import { memo } from 'react'
 import { cn } from '../../utils/cn'
 import { motion } from 'framer-motion'
 
-/**
- * Tabs — animated tab navigation.
- * Controlled component: value + onChange.
- *
- * Variants: line (default) | pill
- */
-
 const Tabs = ({
-  tabs,        // [{ value, label, icon?, count? }]
+  tabs,
   value,
   onChange,
   variant = 'line',
   className,
 }) => (
-  <div className={cn(
-    'flex',
-    variant === 'line'
-      ? 'border-b border-surface-200 dark:border-dark-600 gap-0'
-      : 'gap-1 rounded-lg bg-surface-100 p-1 dark:bg-dark-600',
-    className
-  )}>
+  <div
+    role="tablist"
+    className={cn(
+      'flex',
+      variant === 'line'
+        ? 'border-b border-surface-200 dark:border-dark-600 gap-0'
+        : 'gap-1 rounded-lg bg-surface-100 p-1 dark:bg-dark-600',
+      className
+    )}
+  >
     {tabs.map((tab) => {
       const isActive = tab.value === value
       return (
         <button
           key={tab.value}
+          role="tab"
+          aria-selected={isActive}
           onClick={() => onChange(tab.value)}
           className={cn(
             'relative flex items-center gap-2 px-4 py-2.5',
             'text-sm font-medium transition-all duration-150',
-            'focus:outline-none',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
             variant === 'line' ? [
               isActive
                 ? 'text-brand-600 dark:text-brand-400'
@@ -57,7 +56,6 @@ const Tabs = ({
             </span>
           )}
 
-          {/* Animated underline for line variant */}
           {variant === 'line' && isActive && (
             <motion.div
               layoutId="tab-indicator"
@@ -72,4 +70,4 @@ const Tabs = ({
   </div>
 )
 
-export default Tabs
+export default memo(Tabs)

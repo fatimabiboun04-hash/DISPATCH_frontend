@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
 import { cn } from '../../utils/cn'
 import Skeleton from './Skeleton'
@@ -174,4 +175,4 @@ const Table = ({
   )
 }
 
-export default Table
+export default memo(Table)

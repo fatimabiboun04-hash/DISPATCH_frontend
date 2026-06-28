@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import { Clock, Star, Calendar, FileText, MapPin } from 'lucide-react'
 import { Badge } from '../ui'
-import { formatRelative, formatDate, formatTime } from '../../utils/formatters'
+import { formatRelative, formatTime } from '../../utils/formatters'
 import { cn } from '../../utils/cn'
 
 /**
