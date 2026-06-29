@@ -1,22 +1,29 @@
+import { useMemo } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import DraggablePlanningCard from './DraggablePlanningCard'
-import { Plus }              from 'lucide-react'
-import { Tooltip }           from '../ui'
-import { cn }                from '../../utils/cn'
+import { Plus, Clock, Users } from 'lucide-react'
+import { Tooltip } from '../ui'
+import { cn } from '../../utils/cn'
 
-/**
- * DroppableDayColumn — wraps DayColumn with @dnd-kit droppable.
- * droppableId = day.date 'YYYY-MM-DD'
- */
 const DroppableDayColumn = ({
   day,
   plannings   = [],
+  pausesByPlanningId = {},
   onCardClick,
   onCardDelete,
   onAddClick,
+  onRefresh,
   isWeekLocked = false,
 }) => {
   const { isOver, setNodeRef } = useDroppable({ id: day.date })
+
+  // Compute column summary
+  const summary = useMemo(() => {
+    const empCount = new Set(plannings.map((p) => p.user_id)).size
+    const totalHours = plannings.reduce((acc, p) => acc + (p.shift?.duration_hours || 0), 0)
+    const lockedCount = plannings.filter((p) => p.is_locked).length
+    return { empCount, totalHours, lockedCount }
+  }, [plannings])
 
   return (
     <div className="flex min-w-0 flex-col gap-2">
@@ -45,6 +52,23 @@ const DroppableDayColumn = ({
         )}>
           {day.month}
         </span>
+
+        {/* Column summary badges */}
+        {plannings.length > 0 && (
+          <div className={cn(
+            'mt-2 flex items-center gap-2',
+            day.isToday ? 'text-white/80' : 'text-slate-400'
+          )}>
+            <div className="flex items-center gap-0.5">
+              <Users className="h-2.5 w-2.5" />
+              <span className="text-2xs font-medium">{summary.empCount}</span>
+            </div>
+            <div className="flex items-center gap-0.5">
+              <Clock className="h-2.5 w-2.5" />
+              <span className="text-2xs font-medium">{summary.totalHours}h</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Drop zone */}
@@ -61,10 +85,19 @@ const DroppableDayColumn = ({
             key={planning.id}
             planning={planning}
             index={i}
+            pauses={pausesByPlanningId[planning.id] || []}
             onClick={onCardClick}
             onDelete={onCardDelete}
+            onRefresh={onRefresh}
           />
         ))}
+
+        {/* Empty state */}
+        {plannings.length === 0 && (
+          <div className="flex flex-1 items-center justify-center rounded-xl border border-dashed border-surface-200 dark:border-dark-500 min-h-[80px]">
+            <span className="text-2xs text-slate-300 dark:text-slate-600">Glisser un employé</span>
+          </div>
+        )}
       </div>
 
       {/* Add button */}

@@ -1,23 +1,26 @@
+import { useState, useEffect, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { setFilters, resetFilters } from '../../features/planning/planningSlice'
 import { selectPlanningFilters }    from '../../features/planning/planningSelectors'
 import { selectTeamList } from '../../features/teams/teamSelectors'
 import { selectActiveShifts }       from '../../features/shifts/shiftSelectors'
-import { FilterBar, Select, Button } from '../ui'
+import { selectSkills }             from '../../features/skills/skillSelectors'
+import { FilterBar, Select, Button, SearchInput } from '../ui'
 import { X } from 'lucide-react'
 
-/**
- * PlanningFilters — team + shift + employee filters.
- * Dispatches setFilters — parent page re-fetches on change.
- *
- * Teams from Redux (already fetched in TeamsPage or on mount).
- * Shifts from Redux (already fetched in ShiftsPage or on mount).
- */
+const STATUS_OPTIONS = [
+  { value: '', label: 'Tous les statuts' },
+  { value: 'locked', label: 'Verrouillé' },
+  { value: 'unlocked', label: 'Déverrouillé' },
+]
+
 const PlanningFilters = ({ employees = [], onFiltersChange }) => {
   const dispatch = useDispatch()
   const filters  = useSelector(selectPlanningFilters)
-  const teams = useSelector(selectTeamList)
+  const teams    = useSelector(selectTeamList)
   const shifts   = useSelector(selectActiveShifts)
+  const skills   = useSelector(selectSkills)
+  const searchTimer = useRef(null)
 
   const teamOptions = [
     { value: '', label: 'Toutes les équipes' },
@@ -34,12 +37,27 @@ const PlanningFilters = ({ employees = [], onFiltersChange }) => {
     ...employees.map((e) => ({ value: String(e.id), label: e.name })),
   ]
 
+  const skillOptions = [
+    { value: '', label: 'Toutes les compétences' },
+    ...skills.map((s) => ({ value: String(s.id), label: s.name })),
+  ]
+
   const handleChange = (key, value) => {
     dispatch(setFilters({ [key]: value }))
     onFiltersChange?.()
   }
 
-  const hasActive = filters.team_id || filters.shift_id || filters.user_id
+  const handleSearch = (value) => {
+    dispatch(setFilters({ search: value }))
+    if (searchTimer.current) clearTimeout(searchTimer.current)
+    searchTimer.current = setTimeout(() => onFiltersChange?.(), 300)
+  }
+
+  useEffect(() => {
+    return () => { if (searchTimer.current) clearTimeout(searchTimer.current) }
+  }, [])
+
+  const hasActive = filters.team_id || filters.shift_id || filters.user_id || filters.skill_id || filters.status || filters.search
 
   return (
     <FilterBar
@@ -59,6 +77,13 @@ const PlanningFilters = ({ employees = [], onFiltersChange }) => {
         )
       }
     >
+      <SearchInput
+        value={filters.search}
+        onChange={handleSearch}
+        placeholder="Rechercher employé, shift…"
+        size="sm"
+        className="w-48"
+      />
       <Select
         options={teamOptions}
         value={filters.team_id}
@@ -82,6 +107,20 @@ const PlanningFilters = ({ employees = [], onFiltersChange }) => {
           size="sm"
         />
       )}
+      <Select
+        options={skillOptions}
+        value={filters.skill_id}
+        onChange={(e) => handleChange('skill_id', e.target.value)}
+        className="w-44"
+        size="sm"
+      />
+      <Select
+        options={STATUS_OPTIONS}
+        value={filters.status}
+        onChange={(e) => handleChange('status', e.target.value)}
+        className="w-36"
+        size="sm"
+      />
     </FilterBar>
   )
 }

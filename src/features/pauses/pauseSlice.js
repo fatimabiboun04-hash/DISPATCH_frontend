@@ -5,25 +5,24 @@ import {
   createPauseThunk,
   updatePauseThunk,
   deletePauseThunk,
+  fetchPausesListThunk,
+  fetchPauseStatsThunk,
+  fetchPauseThunk,
+  cancelPauseThunk,
+  completePauseThunk,
 } from './pauseThunks'
 
-/**
- * Pauses state.
- *
- * byPlanningId: keyed map { [planningId]: pause[] }
- * Allows the drawer to show pauses for the selected planning
- * without polluting global state.
- *
- * Pause fields from backend:
- *   pause_start / pause_end → 'HH:mm' strings (datetime:H:i cast)
- *   duration_minutes → computed accessor
- *   is_active → computed accessor
- */
 const initialState = {
-  byPlanningId:    {},  // { [planningId]: [...pauses] }
-  loading:         {},  // { [planningId]: boolean }
+  byPlanningId:    {},
+  loading:         {},
   submitting:      false,
   submitError:     null,
+  list:            null,
+  listLoading:     false,
+  stats:           null,
+  statsLoading:    false,
+  selectedPause:   null,
+  selectedLoading: false,
 }
 
 const pauseSlice = createSlice({
@@ -33,8 +32,42 @@ const pauseSlice = createSlice({
     clearPauseError: (state) => {
       state.submitError = null
     },
+    clearPauseList: (state) => {
+      state.list = null
+    },
+    clearPauseStats: (state) => {
+      state.stats = null
+    },
   },
   extraReducers: (builder) => {
+
+    // ── Fetch list (admin) ─────────────────────────────────
+    builder
+      .addCase(fetchPausesListThunk.pending, (state) => {
+        state.listLoading = true
+        state.submitError = null
+      })
+      .addCase(fetchPausesListThunk.fulfilled, (state, action) => {
+        state.listLoading = false
+        state.list = action.payload
+      })
+      .addCase(fetchPausesListThunk.rejected, (state, action) => {
+        state.listLoading = false
+        state.submitError = action.payload
+      })
+
+    // ── Fetch stats (admin) ────────────────────────────────
+    builder
+      .addCase(fetchPauseStatsThunk.pending, (state) => {
+        state.statsLoading = true
+      })
+      .addCase(fetchPauseStatsThunk.fulfilled, (state, action) => {
+        state.statsLoading = false
+        state.stats = action.payload
+      })
+      .addCase(fetchPauseStatsThunk.rejected, (state) => {
+        state.statsLoading = false
+      })
 
     // ── Fetch by planning ──────────────────────────────────
     builder
@@ -62,7 +95,6 @@ const pauseSlice = createSlice({
         })
       })
       .addCase(fetchPausesBatchThunk.rejected, (state, action) => {
-        // Only clear loading for the IDs that were in the batch request
         const requestedIds = action.meta.arg || []
         requestedIds.forEach((id) => {
           state.loading[id] = false
@@ -70,8 +102,6 @@ const pauseSlice = createSlice({
       })
 
     // ── Create pause ───────────────────────────────────────
-    // Single user → returns one pause object with user + planning.shift loaded
-    // Team        → returns array of pauses (no relations loaded)
     builder
       .addCase(createPauseThunk.pending, (state) => {
         state.submitting  = true
@@ -80,14 +110,10 @@ const pauseSlice = createSlice({
       .addCase(createPauseThunk.fulfilled, (state, action) => {
         state.submitting = false
         const { planningId, data } = action.payload
-
-        // Normalize: always work with array
         const newPauses = Array.isArray(data) ? data : [data]
-
         if (!state.byPlanningId[planningId]) {
           state.byPlanningId[planningId] = []
         }
-        // Append, avoiding duplicates
         newPauses.forEach((p) => {
           if (!state.byPlanningId[planningId].find((x) => x.id === p.id)) {
             state.byPlanningId[planningId].push(p)
@@ -119,6 +145,61 @@ const pauseSlice = createSlice({
         state.submitError = action.payload
       })
 
+    // ── Fetch single pause ─────────────────────────────────
+    builder
+      .addCase(fetchPauseThunk.pending, (state) => {
+        state.selectedLoading = true
+        state.submitError = null
+      })
+      .addCase(fetchPauseThunk.fulfilled, (state, action) => {
+        state.selectedLoading = false
+        state.selectedPause = action.payload
+      })
+      .addCase(fetchPauseThunk.rejected, (state, action) => {
+        state.selectedLoading = false
+        state.submitError = action.payload
+      })
+
+    // ── Cancel pause ───────────────────────────────────────
+    builder
+      .addCase(cancelPauseThunk.pending, (state) => {
+        state.submitting = true
+        state.submitError = null
+      })
+      .addCase(cancelPauseThunk.fulfilled, (state, action) => {
+        state.submitting = false
+        const { planningId, data } = action.payload
+        const list = state.byPlanningId[planningId]
+        if (list) {
+          const idx = list.findIndex((p) => p.id === data.id)
+          if (idx >= 0) list[idx] = data
+        }
+      })
+      .addCase(cancelPauseThunk.rejected, (state, action) => {
+        state.submitting = false
+        state.submitError = action.payload
+      })
+
+    // ── Complete pause ─────────────────────────────────────
+    builder
+      .addCase(completePauseThunk.pending, (state) => {
+        state.submitting = true
+        state.submitError = null
+      })
+      .addCase(completePauseThunk.fulfilled, (state, action) => {
+        state.submitting = false
+        const { planningId, data } = action.payload
+        const list = state.byPlanningId[planningId]
+        if (list) {
+          const idx = list.findIndex((p) => p.id === data.id)
+          if (idx >= 0) list[idx] = data
+        }
+      })
+      .addCase(completePauseThunk.rejected, (state, action) => {
+        state.submitting = false
+        state.submitError = action.payload
+      })
+
     // ── Delete pause ───────────────────────────────────────
     builder
       .addCase(deletePauseThunk.fulfilled, (state, action) => {
@@ -131,5 +212,5 @@ const pauseSlice = createSlice({
   },
 })
 
-export const { clearPauseError } = pauseSlice.actions
+export const { clearPauseError, clearPauseList, clearPauseStats } = pauseSlice.actions
 export default pauseSlice.reducer

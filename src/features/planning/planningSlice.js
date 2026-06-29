@@ -33,6 +33,9 @@ const initialState = {
     team_id:  '',
     shift_id: '',
     user_id:  '',
+    skill_id: '',
+    status:   '',
+    search:   '',
   },
 
   lockLoading:  false,

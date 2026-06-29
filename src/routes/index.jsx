@@ -28,6 +28,7 @@ const EmployeeProfile   = lazy(() => import('../pages/admin/EmployeeProfilePage'
 const AdminPointageLive = lazy(() => import('../pages/admin/PointageLivePage'))
 const AdminTasks        = lazy(() => import('../pages/admin/TasksPage'))
 const AdminSkills       = lazy(() => import('../pages/admin/SkillsPage'))
+const AdminPauses       = lazy(() => import('../pages/admin/PauseManagementPage'))
 // ── Employee ─────────────────────────────────────────────────
 const EmpDashboard      = lazy(() => import('../pages/employee/DashboardPage'))
 const EmpPlanning       = lazy(() => import('../pages/employee/MyPlanningPage'))
@@ -87,6 +88,7 @@ const AppRouter = () => (
           <Route path="pointage-live" element={<AdminPointageLive />} />
           <Route path="tasks"        element={<AdminTasks />} />
           <Route path="skills"       element={<AdminSkills />} />
+          <Route path="pauses"       element={<AdminPauses />} />
         </Route>
 
         {/* ── Employee ── */}

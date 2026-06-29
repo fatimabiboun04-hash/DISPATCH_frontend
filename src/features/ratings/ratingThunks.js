@@ -2,17 +2,16 @@ import { createAsyncThunk } from '@reduxjs/toolkit'
 import ratingService from '../../services/ratingService'
 
 /**
- * Toggle rating: POST /v1/ratings/toggle/{employeeId}
- * Returns { rating, type, icon, message }
+ * Rate employee: POST /v1/ratings/rate/{employeeId}
  */
-export const toggleRatingThunk = createAsyncThunk(
-  'ratings/toggle',
-  async ({ employeeId, reason }, { rejectWithValue }) => {
+export const rateEmployeeThunk = createAsyncThunk(
+  'ratings/rate',
+  async ({ employeeId, score, comment }, { rejectWithValue }) => {
     try {
-      const data = await ratingService.toggle(employeeId, reason)
+      const data = await ratingService.rate(employeeId, { score, comment })
       return { employeeId, data }
     } catch (err) {
-      return rejectWithValue(err.message || 'Failed to update rating')
+      return rejectWithValue(err.response?.data?.message || err.message || 'Failed to update rating')
     }
   }
 )
@@ -27,6 +26,20 @@ export const fetchCurrentRatingThunk = createAsyncThunk(
     try {
       const data = await ratingService.getCurrent(employeeId)
       return { employeeId, data }
+    } catch (err) {
+      return rejectWithValue(err.message)
+    }
+  }
+)
+
+/**
+ * Fetch rating stats: GET /v1/ratings/stats
+ */
+export const fetchRatingStatsThunk = createAsyncThunk(
+  'ratings/fetchStats',
+  async (_, { rejectWithValue }) => {
+    try {
+      return await ratingService.getStats()
     } catch (err) {
       return rejectWithValue(err.message)
     }

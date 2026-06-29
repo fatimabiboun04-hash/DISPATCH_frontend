@@ -1,7 +1,7 @@
 import { useNavigate }        from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { motion }             from 'framer-motion'
-import { Edit2, Trash2, Eye } from 'lucide-react'
+import { Edit2, Trash2, Eye, Users, Star } from 'lucide-react'
 import {
   selectEmployeeList,
   selectEmployeeListLoading,
@@ -12,23 +12,18 @@ import {
 import { setFilters } from '../../features/employees/employeeSlice'
 import {
   Avatar, Badge, Skeleton, EmptyState, ErrorState,
-  Pagination, RatingBadge, SkillBadge, Tooltip, Button,
+  Pagination, StarRating, SkillBadge, Tooltip, Button,
 } from '../ui'
 import RatingToggle      from './RatingToggle'
 import EmployeeStatusBadge from './EmployeeStatusBadge'
-import { Users }         from 'lucide-react'
 import { cn }            from '../../utils/cn'
 
-/**
- * EmployeeTable — main data table for the employees list page.
- *
- * Columns: Avatar | Name | Email | Teams | Skills | Rating | Status | Actions
- *
- * Rating: uses RatingToggle component.
- * Avatar: uses Avatar component (image or initials+gradient fallback).
- * Skills: shows first 2 + "+N more" badge.
- * Teams: shows first 2 team names.
- */
+const RATING_SORT_OPTIONS = [
+  { value: '', label: 'Note' },
+  { value: 'rating_asc', label: 'Note ↑' },
+  { value: 'rating_desc', label: 'Note ↓' },
+]
+
 const EmployeeTable = ({ onEdit, onDelete }) => {
   const navigate  = useNavigate()
   const dispatch  = useDispatch()
@@ -98,14 +93,11 @@ const EmployeeTable = ({ onEdit, onDelete }) => {
           {/* Body */}
           <tbody className="divide-y divide-surface-100 dark:divide-dark-600">
             {employees.map((emp, i) => {
-              // Get current week rating from the loaded ratings array
-              const currentWeekRating = emp.ratings?.find(
-                (r) => r.week_number === new Date().getWeek?.() || true
-              ) || emp.ratings?.[0] || null
+              const currentWeekRating = emp.ratings?.[0] || null
 
               const currentRating = currentWeekRating
-                ? { has_rating: true, type: currentWeekRating.type, icon: currentWeekRating.type === 'excellent' ? '⭐' : '🚩' }
-                : { has_rating: false, type: null }
+                ? { has_rating: true, score: currentWeekRating.score, type: currentWeekRating.type }
+                : { has_rating: false, score: 0 }
 
               return (
                 <motion.tr
@@ -192,8 +184,10 @@ const EmployeeTable = ({ onEdit, onDelete }) => {
                         employeeId={emp.id}
                         currentRating={currentRating}
                       />
-                      {currentRating.has_rating && (
-                        <RatingBadge type={currentRating.type} showLabel={false} />
+                      {currentRating.has_rating && currentRating.score && (
+                        <span className="text-2xs font-medium text-slate-400 min-w-[2rem]">
+                          {currentRating.score}/5
+                        </span>
                       )}
                     </div>
                   </td>
@@ -244,19 +238,6 @@ const EmployeeTable = ({ onEdit, onDelete }) => {
             })}
           </tbody>
         </table>
-      </div>
-
-      {/* Rating legend */}
-      <div className="flex items-center gap-4 px-1">
-        <span className="text-xs text-slate-400">Notation :</span>
-        <div className="flex items-center gap-1.5">
-          <span className="text-sm">⭐</span>
-          <span className="text-xs text-slate-500">= Performance excellente</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-sm">🚩</span>
-          <span className="text-xs text-slate-500">= Nécessite attention</span>
-        </div>
       </div>
 
       {/* Pagination */}

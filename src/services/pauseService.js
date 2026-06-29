@@ -21,6 +21,22 @@ import { API } from '../constants/apiRoutes'
 const pauseService = {
 
   /**
+   * GET /v1/pauses — paginated list with filters
+   */
+  getAll: async (params = {}) => {
+    const res = await axiosInstance.get(API.PAUSES.LIST, { params })
+    return res.data.data
+  },
+
+  /**
+   * GET /v1/pauses/stats — aggregate pause statistics
+   */
+  getStats: async () => {
+    const res = await axiosInstance.get(API.PAUSES.STATS)
+    return res.data.data
+  },
+
+  /**
    * GET /v1/pauses/planning/{planningId}
    * Returns array of pauses for this planning with user + team.
    */
@@ -68,6 +84,30 @@ const pauseService = {
   delete: async (id) => {
     const res = await axiosInstance.delete(API.PAUSES.DELETE(id))
     return res.data  // { success: true, data: null, message: 'Pause deleted' }
+  },
+
+  /**
+   * GET /v1/pauses/{id}
+   */
+  getById: async (id) => {
+    const res = await axiosInstance.get(API.PAUSES.SHOW(id))
+    return res.data.data
+  },
+
+  /**
+   * POST /v1/pauses/{id}/cancel
+   */
+  cancel: async (id) => {
+    const res = await axiosInstance.post(API.PAUSES.CANCEL(id))
+    return res.data.data
+  },
+
+  /**
+   * POST /v1/pauses/{id}/complete
+   */
+  complete: async (id) => {
+    const res = await axiosInstance.post(API.PAUSES.COMPLETE(id))
+    return res.data.data
   },
 
   /**

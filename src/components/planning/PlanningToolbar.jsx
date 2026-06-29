@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Lock, Zap, RefreshCw, CheckCircle, Save, BarChart3,
+  Lock, Zap, RefreshCw, CheckCircle, Save,
 } from 'lucide-react'
 import {
   lockCurrentWeekThunk,
@@ -42,8 +42,7 @@ const PlanningToolbar = ({
   onRefresh,
   weekNumber,
   year,
-  onStatsToggle,
-  statsOpen,
+
   className,
 }) => {
   const dispatch         = useDispatch()
@@ -107,15 +106,6 @@ const PlanningToolbar = ({
             onClick={onRefresh}
           >
             Actualiser
-          </Button>
-
-          <Button
-            variant="secondary"
-            size="sm"
-            leftIcon={<BarChart3 className="h-3.5 w-3.5" />}
-            onClick={onStatsToggle}
-          >
-            {statsOpen ? 'Masquer stats' : 'Statistiques'}
           </Button>
 
           <Button

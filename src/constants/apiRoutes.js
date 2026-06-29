@@ -99,6 +99,9 @@ export const API = {
     SANDBOX_CANCEL:    `${BASE}/planning/sandbox/cancel`,
     // Stats
     STATS:             `${BASE}/planning/stats`,
+    // Coverage & quality
+    COVERAGE:          `${BASE}/planning/coverage`,
+    QUALITY:           `${BASE}/planning/quality`,
     // Audit
     AUDITS:            `${BASE}/planning/audits`,
     // Batch operations
@@ -107,12 +110,18 @@ export const API = {
     BATCH_ASSIGN_EMPLOYEE: `${BASE}/planning/batch/assign-employee`,
     BATCH_DUPLICATE_DAY: `${BASE}/planning/batch/duplicate-day`,
     BATCH_VALIDATE:    `${BASE}/planning/batch/validate`,
+    EMPLOYEE_INFO:     (id) => `${BASE}/planning/employee-info/${id}`,
   },
 
   // ── Pauses ────────────────────────────────────────────────
   PAUSES: {
+    LIST:         `${BASE}/pauses`,
+    STATS:        `${BASE}/pauses/stats`,
     CREATE:       `${BASE}/pauses`,
+    SHOW:         (id) => `${BASE}/pauses/${id}`,
     UPDATE:       (id) => `${BASE}/pauses/${id}`,
+    CANCEL:       (id) => `${BASE}/pauses/${id}/cancel`,
+    COMPLETE:     (id) => `${BASE}/pauses/${id}/complete`,
     DELETE:       (id) => `${BASE}/pauses/${id}`,
     BY_PLANNING:  (planningId) => `${BASE}/pauses/planning/${planningId}`,
     BATCH:        `${BASE}/pauses/batch`,
@@ -159,10 +168,14 @@ export const API = {
 
   // ── Ratings ───────────────────────────────────────────────
   RATINGS: {
-    TOGGLE:  (employeeId) => `${BASE}/ratings/toggle/${employeeId}`,
+    RATE:    (employeeId) => `${BASE}/ratings/rate/${employeeId}`,
     CURRENT: (employeeId) => `${BASE}/ratings/current/${employeeId}`,
     HISTORY: (employeeId) => `${BASE}/ratings/history/${employeeId}`,
+    STATS:   `${BASE}/ratings/stats`,
   },
+
+  // ── Global Search ─────────────────────────────────────────
+  SEARCH: `${BASE}/search`,
 
   // ── Audit Logs ────────────────────────────────────────────
   AUDIT: {

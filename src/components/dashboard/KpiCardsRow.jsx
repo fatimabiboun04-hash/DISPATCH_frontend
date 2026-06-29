@@ -1,6 +1,6 @@
 import {
   Users, Clock, FileText, AlertTriangle,
-  TrendingUp, PauseCircle,
+  TrendingUp, PauseCircle, Star,
 } from 'lucide-react'
 import { useSelector } from 'react-redux'
 import { motion } from 'framer-motion'
@@ -11,6 +11,7 @@ import {
   selectPendingLeaves,
   selectActivePausesCount, selectTodayAssignments,
   selectOvertimes,
+  selectAverageRating, selectTotalRated,
 } from '../../features/dashboard/dashboardSelectors'
 
 import { StatCard } from '../ui'
@@ -37,6 +38,8 @@ const KpiCardsRow = () => {
   const pauseCount     = useSelector(selectActivePausesCount)
   const todayAssign    = useSelector(selectTodayAssignments)
   const overtimes      = useSelector(selectOvertimes)
+  const avgRating      = useSelector(selectAverageRating)
+  const totalRated     = useSelector(selectTotalRated)
 
   const cards = [
     {
@@ -103,10 +106,26 @@ const KpiCardsRow = () => {
         ? 'text-amber-500 dark:text-amber-400'
         : 'text-emerald-500 dark:text-emerald-400',
     },
+    {
+      label:     'Note Moyenne',
+      value:     avgRating ? `${avgRating.toFixed(1)}/5` : '—',
+      sublabel:  `${totalRated} employé${totalRated > 1 ? 's' : ''} noté${totalRated > 1 ? 's' : ''}`,
+      icon:      Star,
+      iconBg:    avgRating >= 4
+        ? 'bg-emerald-50 dark:bg-emerald-900/20'
+        : avgRating >= 3
+          ? 'bg-amber-50 dark:bg-amber-900/20'
+          : 'bg-slate-50 dark:bg-dark-600',
+      iconColor: avgRating >= 4
+        ? 'text-emerald-500 dark:text-emerald-400'
+        : avgRating >= 3
+          ? 'text-amber-500 dark:text-amber-400'
+          : 'text-slate-400',
+    },
   ]
 
   return (
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-7">
       {cards.map((card, i) => (
         <motion.div
           key={card.label}

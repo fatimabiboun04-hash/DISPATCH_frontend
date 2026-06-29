@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Users, UsersRound, CalendarDays,
   Clock, FileText, BarChart3, History,
-  Settings, Shield, ChevronRight,  Timer, ListChecks, Wrench,
+  Settings, Shield, ChevronRight,  Timer, ListChecks, Wrench, Coffee,
 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 
@@ -13,6 +13,7 @@ const LINKS = [
   { to: '/admin/teams',          icon: UsersRound,      label: 'Équipes'         },
   { to: '/admin/employees',      icon: Users,           label: 'Employés'        },
   { to: '/admin/pointage-live',  icon: Timer,           label: 'Pointage Live'   },
+  { to: '/admin/pauses',         icon: Coffee,          label: 'Pauses'          },
   { to: '/admin/leave-requests', icon: FileText,        label: 'Congés'          },
   { to: '/admin/reports',        icon: BarChart3,       label: 'Rapports'        },
   { to: '/admin/history',        icon: History,         label: 'Historique'      },

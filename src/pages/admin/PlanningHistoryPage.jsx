@@ -93,8 +93,8 @@ const PlanningHistoryPage = () => {
             <Badge variant="default">
               {historyData.length} assignation{historyData.length > 1 ? 's' : ''}
             </Badge>
-            <Badge variant="warning">
-              🔒 Semaine {weekNum}/{year}
+            <Badge variant="warning" dot>
+              Semaine {weekNum}/{year}
             </Badge>
           </div>
         )}

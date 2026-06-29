@@ -11,6 +11,15 @@ const STATUS_OPTIONS = [
   { value: 'suspended', label: 'Suspendu' },
 ]
 
+const RATING_OPTIONS = [
+  { value: '',  label: 'Toutes les notes' },
+  { value: '5', label: '★★★★★ Excellent' },
+  { value: '4', label: '★★★★☆ Très bien' },
+  { value: '3', label: '★★★☆☆ Bien' },
+  { value: '2', label: '★★☆☆☆ Moyen' },
+  { value: '1', label: '★☆☆☆☆ À améliorer' },
+]
+
 /**
  * EmployeeFilters — search + team + status filters for the employees table.
  * Dispatches setFilters on every change.
@@ -28,9 +37,10 @@ const EmployeeFilters = ({ teams = [], onAddEmployee }) => {
   )
   const handleTeam    = (e) => dispatch(setFilters({ team_id: e.target.value, page: 1 }))
   const handleStatus  = (e) => dispatch(setFilters({ status: e.target.value, page: 1 }))
+  const handleRating  = (e) => dispatch(setFilters({ rating: e.target.value, page: 1 }))
   const handleReset   = () => dispatch(resetFilters())
 
-  const hasActiveFilters = filters.search || filters.team_id || filters.status
+  const hasActiveFilters = filters.search || filters.team_id || filters.status || filters.rating
 
   const teamOptions = [
     { value: '', label: 'Toutes les équipes' },
@@ -82,6 +92,13 @@ const EmployeeFilters = ({ teams = [], onAddEmployee }) => {
         value={filters.status}
         onChange={handleStatus}
         className="w-36"
+        size="sm"
+      />
+      <Select
+        options={RATING_OPTIONS}
+        value={filters.rating}
+        onChange={handleRating}
+        className="w-48"
         size="sm"
       />
     </FilterBar>

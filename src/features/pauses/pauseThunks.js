@@ -2,6 +2,35 @@ import { createAsyncThunk } from '@reduxjs/toolkit'
 import pauseService from '../../services/pauseService'
 
 /**
+ * GET /v1/pauses — paginated list with filters
+ */
+export const fetchPausesListThunk = createAsyncThunk(
+  'pauses/fetchList',
+  async (params = {}, { rejectWithValue }) => {
+    try {
+      const data = await pauseService.getAll(params)
+      return data
+    } catch (err) {
+      return rejectWithValue(err.message || 'Failed to load pauses')
+    }
+  }
+)
+
+/**
+ * GET /v1/pauses/stats — aggregate statistics
+ */
+export const fetchPauseStatsThunk = createAsyncThunk(
+  'pauses/fetchStats',
+  async (_, { rejectWithValue }) => {
+    try {
+      return await pauseService.getStats()
+    } catch (err) {
+      return rejectWithValue(err.message || 'Failed to load stats')
+    }
+  }
+)
+
+/**
  * GET /v1/pauses/planning/{planningId}
  * Returns plain array of pauses with user + team loaded.
  */
@@ -62,6 +91,50 @@ export const fetchPausesBatchThunk = createAsyncThunk(
       return await pauseService.batchGetByPlanning(planningIds)
     } catch (err) {
       return rejectWithValue(err.message || 'Failed to load pauses')
+    }
+  }
+)
+
+/**
+ * GET /v1/pauses/{id}
+ */
+export const fetchPauseThunk = createAsyncThunk(
+  'pauses/fetchPause',
+  async (pauseId, { rejectWithValue }) => {
+    try {
+      return await pauseService.getById(pauseId)
+    } catch (err) {
+      return rejectWithValue(err.message || 'Failed to load pause')
+    }
+  }
+)
+
+/**
+ * POST /v1/pauses/{id}/cancel
+ */
+export const cancelPauseThunk = createAsyncThunk(
+  'pauses/cancel',
+  async ({ pauseId, planningId }, { rejectWithValue }) => {
+    try {
+      const result = await pauseService.cancel(pauseId)
+      return { planningId, data: result, pauseId }
+    } catch (err) {
+      return rejectWithValue(err.message || 'Failed to cancel pause')
+    }
+  }
+)
+
+/**
+ * POST /v1/pauses/{id}/complete
+ */
+export const completePauseThunk = createAsyncThunk(
+  'pauses/complete',
+  async ({ pauseId, planningId }, { rejectWithValue }) => {
+    try {
+      const result = await pauseService.complete(pauseId)
+      return { planningId, data: result, pauseId }
+    } catch (err) {
+      return rejectWithValue(err.message || 'Failed to complete pause')
     }
   }
 )

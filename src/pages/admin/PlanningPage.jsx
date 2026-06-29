@@ -8,6 +8,8 @@ import { selectPlanningFilters, selectPlanningError } from '../../features/plann
 import { selectTeamList } from '../../features/teams/teamSelectors'
 import { fetchTeamsThunk }   from '../../features/teams/teamThunks'
 import { fetchShiftsThunk }  from '../../features/shifts/shiftThunks'
+import { fetchPlanningStatsThunk } from '../../features/planning/planningStatsSlice'
+import { selectStatsData } from '../../features/planning/planningStatsSelectors'
 import PlanningToolbar       from '../../components/planning/PlanningToolbar'
 import PlanningFilters       from '../../components/planning/PlanningFilters'
 import PlanningGrid          from '../../components/planning/PlanningGrid'
@@ -16,7 +18,7 @@ import ConflictBanner        from '../../components/planning/ConflictBanner'
 import PlanningDrawer        from '../../components/planning/PlanningDrawer'
 import QuickAddPlanningModal from '../../components/planning/QuickAddPlanningModal'
 import BatchToolbar          from '../../components/planning/BatchToolbar'
-import StatisticsPanel       from '../../components/planning/StatisticsPanel'
+import WeeklySummary         from '../../components/planning/WeeklySummary'
 import SandboxPanel          from '../../components/planning/SandboxPanel'
 import { ErrorState, ConfirmDialog } from '../../components/ui'
 import axiosInstance         from '../../services/axiosInstance'
@@ -53,13 +55,15 @@ const PlanningPage = () => {
   const [deleteTarget,   setDeleteTarget]   = useState(null)
   const [deleting,       setDeleting]       = useState(false)
 
-  // Statistics panel
-  const [statsOpen, setStatsOpen] = useState(false)
-
   // Dropdown data for modals
   const [employees, setEmployees] = useState([])
 
   const reduxTeams = useSelector(selectTeamList)
+  const stats = useSelector(selectStatsData)
+
+  const fetchStats = useCallback(() => {
+    dispatch(fetchPlanningStatsThunk({ week_number: weekNum, year }))
+  }, [dispatch, weekNum, year])
 
   useEffect(() => {
     dispatch(fetchShiftsThunk())
@@ -69,14 +73,25 @@ const PlanningPage = () => {
     fetchWeek(weekDate, filters)
   }, []) // eslint-disable-line
 
+  useEffect(() => {
+    if (weekNum && year) {
+      fetchStats()
+    }
+  }, [weekNum, year, fetchStats])
+
   const refetchWithFilters = useCallback(() => {
-    dispatch(fetchPlanningThunk({
+    const params = {
       week_number: weekNum,
       year,
       team_id:  filters.team_id  || undefined,
       shift_id: filters.shift_id || undefined,
       user_id:  filters.user_id  || undefined,
-    }))
+      skill_id: filters.skill_id || undefined,
+      search:   filters.search   || undefined,
+    }
+    if (filters.status === 'locked') params.is_locked = true
+    if (filters.status === 'unlocked') params.is_locked = false
+    dispatch(fetchPlanningThunk(params))
   }, [dispatch, weekNum, year, filters])
 
   useEffect(() => {
@@ -101,7 +116,10 @@ const PlanningPage = () => {
     return () => abortController.abort()
   }, [])
 
-  const handleRefresh = () => fetchWeek(weekDate, filters)
+  const handleRefresh = () => {
+    fetchWeek(weekDate, filters)
+    fetchStats()
+  }
 
   const handleCardClick = (planning) => {
     setDrawerPlanning(planning)
@@ -125,6 +143,19 @@ const PlanningPage = () => {
     }
   }
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.ctrlKey && e.key === 'n') {
+        e.preventDefault()
+        const today = days.find((d) => d.isToday) || days[3] || days[0]
+        if (today) handleAddClick(today)
+      }
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [days])
+
   const handleAddClick = (day) => {
     setAddDate(day.date)
     setAddOpen(true)
@@ -139,17 +170,20 @@ const PlanningPage = () => {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 md:gap-6">
 
       {/* Page header */}
-      <div>
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
         <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">
           Planning hebdomadaire
         </h1>
         <p className="mt-0.5 text-sm text-slate-400">
           Gérez les assignations des équipes
         </p>
-      </div>
+      </motion.div>
 
       {/* Toolbar */}
       <motion.div
@@ -165,10 +199,15 @@ const PlanningPage = () => {
           onRefresh={handleRefresh}
           weekNumber={weekNum}
           year={year}
-          onStatsToggle={() => setStatsOpen((s) => !s)}
-          statsOpen={statsOpen}
         />
       </motion.div>
+
+      {/* Weekly summary — always visible */}
+      <WeeklySummary
+        weekNumber={weekNum}
+        year={year}
+        stats={stats}
+      />
 
       {/* Conflict banner */}
       <ConflictBanner />
@@ -180,14 +219,6 @@ const PlanningPage = () => {
       <PlanningFilters
         employees={employees}
         onFiltersChange={refetchWithFilters}
-      />
-
-      {/* Statistics panel */}
-      <StatisticsPanel
-        weekNumber={weekNum}
-        year={year}
-        open={statsOpen}
-        onClose={() => setStatsOpen(false)}
       />
 
       {/* Sandbox preview */}
@@ -231,7 +262,10 @@ const PlanningPage = () => {
         date={addDate}
         employees={employees}
         teams={reduxTeams}
+        defaultTeamId={filters.team_id}
         onSuccess={handleRefresh}
+        weekNumber={weekNum}
+        year={year}
       />
 
       {/* Delete confirmation (from grid row button) */}

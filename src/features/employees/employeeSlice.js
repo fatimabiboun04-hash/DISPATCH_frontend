@@ -31,6 +31,7 @@ const initialState = {
     search:  '',
     team_id: '',
     status:  '',
+    rating:  '',
     page:    1,
   },
 

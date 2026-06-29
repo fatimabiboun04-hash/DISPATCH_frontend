@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
-import { motion } from 'framer-motion'
-import { ArrowLeft, Edit2 } from 'lucide-react'
+import { ArrowLeft, Edit2, Coffee } from 'lucide-react'
 import {
   fetchEmployeeThunk,
   fetchEmployeeHistoryThunk,
@@ -27,7 +26,7 @@ import ActivityTimeline    from '../../components/employees/ActivityTimeline'
 import EmployeeFormModal   from '../../components/employees/EmployeeFormModal'
 import {
   Tabs, Button, Card, Skeleton, ErrorState,
-  Badge,
+  Badge, StarRating,
 } from '../../components/ui'
 import { formatDate, formatTime, formatMinutesToHours } from '../../utils/formatters'
 import { getShiftColor } from '../../constants/shiftColors'
@@ -38,6 +37,7 @@ import { API } from '../../constants/apiRoutes'
 const PROFILE_TABS = [
   { value: 'overview',  label: 'Vue d\'ensemble' },
   { value: 'planning',  label: 'Planning' },
+  { value: 'pauses',    label: 'Pauses' },
   { value: 'leaves',    label: 'Congés' },
   { value: 'pointages', label: 'Pointages' },
   { value: 'timeline',  label: 'Activité' },
@@ -68,8 +68,9 @@ const EmployeeProfilePage = () => {
   const [editOpen,   setEditOpen]   = useState(false)
   const [leaveData,  setLeaveData]  = useState([])
   const [leaveLoading, setLeaveLoading] = useState(false)
-  const [profileStats, setProfileStats] = useState(null)
-  const [currentRating, setCurrentRating] = useState(null)
+  const [pauseData, setPauseData] = useState([])
+  const [pauseLoading, setPauseLoading] = useState(false)
+  const [profileStats] = useState(null)
   const [teams, setTeams] = useState([])
   const [skills, setSkills] = useState([])
 
@@ -77,6 +78,18 @@ const EmployeeProfilePage = () => {
   useEffect(() => {
     dispatch(fetchEmployeeThunk(id))
     dispatch(fetchEmployeeHistoryThunk({ id, params: { per_page: 30 } }))
+    const load = async () => {
+      setPauseLoading(true)
+      try {
+        const res = await axiosInstance.get(API.PAUSES.LIST, {
+          params: { user_id: id, per_page: 50 },
+        })
+        setPauseData(res.data.data?.data || res.data.data || [])
+      } catch { /* silently fail */ } finally {
+        setPauseLoading(false)
+      }
+    }
+    load()
     return () => dispatch(clearDetail())
   }, [id, dispatch])
 
@@ -89,25 +102,35 @@ const EmployeeProfilePage = () => {
     if (activeTab === 'pointages' && pointages.length === 0) {
       dispatch(fetchEmployeePointagesThunk({ id, params: {} }))
     }
+    if (activeTab === 'pauses' && pauseData.length === 0) {
+      const load = async () => {
+        setPauseLoading(true)
+        try {
+          const res = await axiosInstance.get(API.PAUSES.LIST, {
+            params: { user_id: id, per_page: 50 },
+          })
+          setPauseData(res.data.data?.data || res.data.data || [])
+        } catch { /* silently fail */ } finally {
+          setPauseLoading(false)
+        }
+      }
+      load()
+    }
     if (activeTab === 'leaves' && leaveData.length === 0) {
-      fetchLeaves()
+      const load = async () => {
+        setLeaveLoading(true)
+        try {
+          const res = await axiosInstance.get(API.LEAVE.LIST, {
+            params: { user_id: id },
+          })
+          setLeaveData(res.data.data || [])
+        } catch { /* silently fail */ } finally {
+          setLeaveLoading(false)
+        }
+      }
+      load()
     }
-  }, [activeTab, id])
-
-  // Fetch leave history for this employee
-  const fetchLeaves = async () => {
-    setLeaveLoading(true)
-    try {
-      const res = await axiosInstance.get(API.LEAVE.LIST, {
-        params: { user_id: id },
-      })
-      setLeaveData(res.data.data || [])
-    } catch {
-      // silently fail
-    } finally {
-      setLeaveLoading(false)
-    }
-  }
+  }, [activeTab, id, planning.length, pointages.length, leaveData.length, dispatch])
 
   // Fetch teams + skills for edit modal
   useEffect(() => {
@@ -119,26 +142,18 @@ const EmployeeProfilePage = () => {
         ])
         setTeams(teamsRes.data.data || [])
         setSkills(skillsRes.data.data || [])
-      } catch {}
+      } catch { /* non-critical */ }
     }
     fetchMeta()
   }, [])
 
-  // Load profile stats (hours, monthly hours, rating) via /me for admins
-  // The admin calls GET /v1/employees/{id} which returns ratings array
-  useEffect(() => {
-    if (employee) {
-      const weekNum = new Date().getWeekNumber?.() ||
-        Math.ceil((new Date() - new Date(new Date().getFullYear(), 0, 1)) / 604800000)
-      const currentYear = new Date().getFullYear()
-      const rating = employee.ratings?.find(
-        (r) => r.week_number && r.year === currentYear
-      ) || employee.ratings?.[0]
-      setCurrentRating(rating
-        ? { has_rating: true, type: rating.type, icon: rating.type === 'excellent' ? '⭐' : '🚩', reason: rating.reason }
-        : { has_rating: false }
-      )
-    }
+  // Derive current rating from employee data
+  const currentRating = useMemo(() => {
+    if (!employee) return null
+    const rating = employee.ratings?.[0]
+    return rating
+      ? { has_rating: true, score: rating.score, type: rating.type, comment: rating.comment || rating.reason }
+      : { has_rating: false }
   }, [employee])
 
   if (loading) {
@@ -249,6 +264,21 @@ const EmployeeProfilePage = () => {
                 )}
               </div>
 
+              {/* Current pause */}
+              {pauseData.some((p) => p.status === 'active') && (
+                <div className="rounded-xl border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-900/20">
+                  <p className="text-xs font-medium text-green-600 dark:text-green-400 uppercase tracking-wider mb-1">
+                    Pause en cours
+                  </p>
+                  {pauseData.filter((p) => p.status === 'active').slice(0, 1).map((p) => (
+                    <p key={p.id} className="text-sm text-green-700 dark:text-green-300">
+                      {p.pause_start} → {p.pause_end} ({p.duration_minutes} min)
+                      {p.type ? ` · ${p.type}` : ''}
+                    </p>
+                  ))}
+                </div>
+              )}
+
               {/* Rating history (last 5) */}
               {employee.ratings?.length > 0 && (
                 <div>
@@ -259,12 +289,18 @@ const EmployeeProfilePage = () => {
                     {employee.ratings.slice(0, 5).map((r) => (
                       <div key={r.id}
                            className="flex items-center justify-between rounded-lg
-                                      border border-surface-100 px-3 py-2
-                                      dark:border-dark-600">
+                                       border border-surface-100 px-3 py-2
+                                       dark:border-dark-600">
                         <div className="flex items-center gap-2">
-                          <span>{r.type === 'excellent' ? '⭐' : '🚩'}</span>
-                          <span className="text-sm text-slate-600 dark:text-slate-300">
-                            {r.reason}
+                          {r.score ? (
+                            <StarRating value={r.score} readonly size="sm" />
+                          ) : (
+                            <Badge variant={r.type === 'excellent' ? 'success' : 'danger'} size="sm">
+                              {r.type === 'excellent' ? 'Excellent' : 'À améliorer'}
+                            </Badge>
+                          )}
+                          <span className="text-sm text-slate-500 dark:text-slate-400">
+                            {r.comment || r.reason || ''}
                           </span>
                         </div>
                         <span className="text-2xs text-slate-400">
@@ -321,6 +357,63 @@ const EmployeeProfilePage = () => {
             )
           )}
 
+          {/* Pause history tab */}
+          {activeTab === 'pauses' && (
+            pauseLoading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton.Block key={i} className="h-14 rounded-lg" />
+                ))}
+              </div>
+            ) : pauseData.length === 0 ? (
+              <div className="py-8 text-center text-sm text-slate-400">
+                Aucune pause enregistrée
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {pauseData.map((p) => {
+                  const statusCfg = {
+                    scheduled: { label: 'Planifiée', variant: 'info' },
+                    active:    { label: 'En cours', variant: 'success' },
+                    completed: { label: 'Terminée', variant: 'default' },
+                    cancelled: { label: 'Annulée', variant: 'warning' },
+                    expired:   { label: 'Expirée', variant: 'danger' },
+                  }[p.status] || { label: p.status, variant: 'default' }
+                  return (
+                    <div key={p.id}
+                         className="flex items-center justify-between rounded-xl
+                                    border border-surface-100 px-4 py-3
+                                    dark:border-dark-600">
+                      <div className="flex items-center gap-3">
+                        <Coffee className="h-4 w-4 text-slate-400" />
+                        <div>
+                          <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                            {p.pause_start} → {p.pause_end}
+                          </p>
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            {formatDate(p.created_at)}
+                            {p.type ? ` · ${p.type}` : ''}
+                            {p.duration_minutes ? ` · ${p.duration_minutes} min` : ''}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {p.reason && (
+                          <span className="text-xs text-slate-400 max-w-[120px] truncate">
+                            {p.reason}
+                          </span>
+                        )}
+                        <Badge variant={statusCfg.variant} size="sm">
+                          {statusCfg.label}
+                        </Badge>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          )}
+
           {/* Leave history tab */}
           {activeTab === 'leaves' && (
             leaveLoading ? (
@@ -353,9 +446,9 @@ const EmployeeProfilePage = () => {
                         : 'warning'
                       }
                     >
-                      {leave.status === 'approved' ? '✅ Approuvé'
-                       : leave.status === 'rejected' ? '❌ Refusé'
-                       : '⏳ En attente'}
+                      {leave.status === 'approved' ? 'Approuvé'
+                       : leave.status === 'rejected' ? 'Refusé'
+                       : 'En attente'}
                     </Badge>
                   </div>
                 ))}
@@ -410,7 +503,7 @@ const EmployeeProfilePage = () => {
                        : '✗ Absent'}
                     </Badge>
                     {p.is_flagged && (
-                      <Badge variant="danger" size="sm">🚩 Suspect</Badge>
+                      <Badge variant="danger" size="sm">Suspect</Badge>
                     )}
                   </div>
                 ))}

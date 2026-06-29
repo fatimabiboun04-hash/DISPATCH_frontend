@@ -7,7 +7,7 @@ import { cn }           from '../../utils/cn'
  * DraggablePlanningCard — wraps PlanningCard with @dnd-kit draggable.
  * draggableId = planning.id (converted to string for dnd-kit)
  */
-const DraggablePlanningCard = ({ planning, onClick, onDelete, index }) => {
+const DraggablePlanningCard = ({ planning, pauses = [], onClick, onDelete, onRefresh, index }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({ id: String(planning.id) })
 
@@ -28,8 +28,10 @@ const DraggablePlanningCard = ({ planning, onClick, onDelete, index }) => {
     >
       <PlanningCard
         planning={planning}
+        pauses={pauses}
         onClick={onClick}
         onDelete={onDelete}
+        onRefresh={onRefresh}
         index={index}
         animate={!isDragging}
       />

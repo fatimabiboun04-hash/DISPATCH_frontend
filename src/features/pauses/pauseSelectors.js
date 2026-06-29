@@ -12,5 +12,7 @@ export const selectPausesLoading = createSelector(
   (pauses, planningId) => pauses.loading[planningId] || false
 )
 
+export const selectPausesMap = (state) => state.pauses.byPlanningId
+
 export const selectPauseSubmitting = (state) => state.pauses.submitting
 export const selectPauseSubmitError = (state) => state.pauses.submitError

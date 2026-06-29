@@ -1,16 +1,13 @@
 import { createSlice } from '@reduxjs/toolkit'
-import { toggleRatingThunk, fetchCurrentRatingThunk } from './ratingThunks'
+import { rateEmployeeThunk, fetchCurrentRatingThunk, fetchRatingStatsThunk } from './ratingThunks'
 
-/**
- * Rating state.
- * currentRatings: keyed by employeeId → { has_rating, type, icon, reason }
- * Allows the table to show the current week rating per employee
- * without an extra API call for each row.
- */
 const initialState = {
-  // Map of employeeId → current rating data
   currentRatings: {},
-  toggling:       {},  // employeeId → boolean (loading state per employee)
+  rating:         null,
+  ratingLoading:  false,
+  toggling:       {},
+  stats:          null,
+  statsLoading:   false,
   error:          null,
 }
 
@@ -19,39 +16,62 @@ const ratingSlice = createSlice({
   initialState,
   reducers: {
     clearRatingError: (state) => { state.error = null },
+    clearRatingStats: (state) => { state.stats = null },
   },
   extraReducers: (builder) => {
 
-    // ── Toggle rating ──────────────────────────────────────
+    // ── Rate employee ──────────────────────────────────────
     builder
-      .addCase(toggleRatingThunk.pending, (state, action) => {
+      .addCase(rateEmployeeThunk.pending, (state, action) => {
         state.toggling[action.meta.arg.employeeId] = true
         state.error = null
       })
-      .addCase(toggleRatingThunk.fulfilled, (state, action) => {
+      .addCase(rateEmployeeThunk.fulfilled, (state, action) => {
         const { employeeId, data } = action.payload
         state.toggling[employeeId] = false
-        // Store the new rating in currentRatings
         state.currentRatings[employeeId] = {
           has_rating: true,
-          type:   data.type,
-          icon:   data.icon,
-          reason: data.rating?.reason || '',
+          score:   data.score,
+          type:    data.type,
+          label:   data.label,
         }
       })
-      .addCase(toggleRatingThunk.rejected, (state, action) => {
+      .addCase(rateEmployeeThunk.rejected, (state, action) => {
         state.toggling[action.meta.arg.employeeId] = false
         state.error = action.payload
       })
 
     // ── Fetch current rating ───────────────────────────────
     builder
+      .addCase(fetchCurrentRatingThunk.pending, (state) => {
+        state.ratingLoading = true
+      })
       .addCase(fetchCurrentRatingThunk.fulfilled, (state, action) => {
         const { employeeId, data } = action.payload
+        state.ratingLoading = false
         state.currentRatings[employeeId] = data
+        state.rating = data
+      })
+      .addCase(fetchCurrentRatingThunk.rejected, (state) => {
+        state.ratingLoading = false
+      })
+
+    // ── Fetch rating stats ────────────────────────────────
+    builder
+      .addCase(fetchRatingStatsThunk.pending, (state) => {
+        state.statsLoading = true
+        state.error = null
+      })
+      .addCase(fetchRatingStatsThunk.fulfilled, (state, action) => {
+        state.statsLoading = false
+        state.stats = action.payload
+      })
+      .addCase(fetchRatingStatsThunk.rejected, (state, action) => {
+        state.statsLoading = false
+        state.error = action.payload
       })
   },
 })
 
-export const { clearRatingError } = ratingSlice.actions
+export const { clearRatingError, clearRatingStats } = ratingSlice.actions
 export default ratingSlice.reducer

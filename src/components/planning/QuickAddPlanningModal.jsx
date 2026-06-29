@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { motion, AnimatePresence } from 'framer-motion'
+import { AlertTriangle, XCircle } from 'lucide-react'
 import { createPlanningThunk } from '../../features/planning/planningThunks'
 import {
   selectPlanningSubmitting,
@@ -12,23 +14,19 @@ import {
 } from '../../features/planning/planningSelectors'
 import { clearSubmitError } from '../../features/planning/planningSlice'
 import { selectActiveShifts } from '../../features/shifts/shiftSelectors'
-import { Modal, Select, Input, Button, Badge } from '../ui'
+import EmployeeSelect from './EmployeeSelect'
+import ShiftSelect from './ShiftSelect'
+import EmployeeInfoPanel from './EmployeeInfoPanel'
+import ShiftInfoPanel from './ShiftInfoPanel'
+import { Modal, Select, Input, Button } from '../ui'
 import { formatDate } from '../../utils/formatters'
+import { cn } from '../../utils/cn'
+import planningService from '../../services/planningService'
 import toast from 'react-hot-toast'
 
-/**
- * QuickAddPlanningModal — minimal form to create a planning assignment.
- *
- * Pre-fills the date from the day column that was clicked.
- * Body sent to POST /v1/planning: { user_id, shift_id, date, team_id?, notes? }
- *
- * Conflict detection: 422 with { errors: { planning: [...] } }
- * Shown in ConflictBanner — cleared on close.
- */
-
 const schema = z.object({
-  user_id:  z.string().min(1, 'Sélectionnez un employé'),
-  shift_id: z.string().min(1, 'Sélectionnez un shift'),
+  user_id:  z.number().min(1, 'Sélectionnez un employé'),
+  shift_id: z.number().min(1, 'Sélectionnez un shift'),
   team_id:  z.string().optional(),
   notes:    z.string().optional(),
 })
@@ -36,10 +34,13 @@ const schema = z.object({
 const QuickAddPlanningModal = ({
   open,
   onClose,
-  date,         // pre-filled date string 'YYYY-MM-DD'
+  date,
   employees = [],
   teams     = [],
+  defaultTeamId,
   onSuccess,
+  weekNumber,
+  year,
 }) => {
   const dispatch       = useDispatch()
   const submitting     = useSelector(selectPlanningSubmitting)
@@ -47,20 +48,66 @@ const QuickAddPlanningModal = ({
   const submitError    = useSelector(selectSubmitError)
   const fieldErrors    = useSelector(selectFieldErrors)
   const activeShifts   = useSelector(selectActiveShifts)
+  const notesRef       = useRef(null)
+
+  const [liveConflicts, setLiveConflicts] = useState([])
+  const [validating, setValidating] = useState(false)
+  const debounceRef = useRef(null)
 
   const {
-    register,
     handleSubmit,
     reset,
+    register,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm({ resolver: zodResolver(schema) })
+
+  const watchUserId  = watch('user_id')
+  const watchShiftId = watch('shift_id')
+
+  // Live validation when both employee and shift are selected
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+
+    if (!watchUserId || !watchShiftId || !date) {
+      setLiveConflicts([])
+      return
+    }
+
+    setValidating(true)
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const result = await planningService.validateBatch([{
+          user_id: watchUserId,
+          shift_id: watchShiftId,
+          date,
+        }])
+        setLiveConflicts(result.conflicts?.[0]?.conflicts || [])
+      } catch {
+        setLiveConflicts([])
+      } finally {
+        setValidating(false)
+      }
+    }, 400)
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [watchUserId, watchShiftId, date])
 
   useEffect(() => {
     if (open) {
       dispatch(clearSubmitError())
-      reset({ user_id: '', shift_id: '', team_id: '', notes: '' })
+      reset({
+        user_id:  undefined,
+        shift_id: undefined,
+        team_id:  defaultTeamId ? String(defaultTeamId) : '',
+        notes:    '',
+      })
+      setLiveConflicts([])
     }
-  }, [open, dispatch, reset])
+  }, [open, dispatch, reset, defaultTeamId])
 
   const onSubmit = async (formData) => {
     const payload = {
@@ -76,22 +123,20 @@ const QuickAddPlanningModal = ({
       onSuccess?.()
       onClose()
     }
-    // Conflict errors shown via ConflictBanner — no need to handle here
   }
 
-  const shiftOptions = activeShifts.map((s) => ({
-    value: String(s.id),
-    label: `${s.name} (${s.start_time}–${s.end_time})`,
-  }))
+  const hasLiveError = liveConflicts.some((c) => c.severity === 'error')
+  const hasLiveWarning = liveConflicts.some((c) => c.severity === 'warning')
 
-  const employeeOptions = employees.map((e) => ({
-    value: String(e.id),
-    label: e.name,
-  }))
+  const selectedShift = activeShifts.find((s) => s.id === watchShiftId)
 
   const teamOptions = [
     { value: '', label: '— Aucune équipe —' },
-    ...teams.map((t) => ({ value: String(t.id), label: t.name })),
+    ...teams.map((t) => ({
+      value: String(t.id),
+      label: t.name,
+      color: t.color,
+    })),
   ]
 
   return (
@@ -106,7 +151,7 @@ const QuickAddPlanningModal = ({
           <Button variant="secondary" onClick={onClose} disabled={submitting}>
             Annuler
           </Button>
-          <Button loading={submitting} onClick={handleSubmit(onSubmit)}>
+          <Button loading={submitting} onClick={handleSubmit(onSubmit)} disabled={hasLiveError}>
             Assigner
           </Button>
         </>
@@ -129,7 +174,7 @@ const QuickAddPlanningModal = ({
           </div>
         )}
 
-        {/* Conflict errors */}
+        {/* Conflict errors from server */}
         {conflictErrors.length > 0 && (
           <div className="rounded-xl border border-red-200 bg-red-50 p-3
                           dark:border-red-800 dark:bg-red-900/20">
@@ -137,36 +182,132 @@ const QuickAddPlanningModal = ({
               const msg = typeof err === 'string' ? err : err.message || ''
               return (
                 <p key={i} className="text-xs text-red-600 dark:text-red-400">
-                  ⚠ {msg}
+                  {msg}
                 </p>
               )
             })}
           </div>
         )}
 
-        <Select
+        {/* Live validation results */}
+        <AnimatePresence>
+          {liveConflicts.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              className={cn(
+                'rounded-xl border p-3 space-y-1.5',
+                hasLiveError
+                  ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/10'
+                  : 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/10'
+              )}
+            >
+              <div className="flex items-center gap-1.5 mb-1">
+                {hasLiveError ? (
+                  <XCircle className="h-3.5 w-3.5 text-red-500" />
+                ) : (
+                  <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                )}
+                <span className={cn(
+                  'text-2xs font-semibold uppercase tracking-wider',
+                  hasLiveError ? 'text-red-600' : 'text-amber-600'
+                )}>
+                  {hasLiveError ? 'Conflits détectés' : 'Avertissements'}
+                </span>
+                {validating && (
+                  <span className="ml-auto h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                )}
+              </div>
+              {liveConflicts.map((c, i) => (
+                <div key={i} className="flex items-start gap-1.5">
+                  {c.severity === 'error' ? (
+                    <XCircle className="h-3 w-3 text-red-500 mt-0.5 flex-shrink-0" />
+                  ) : (
+                    <AlertTriangle className="h-3 w-3 text-amber-500 mt-0.5 flex-shrink-0" />
+                  )}
+                  <span className={cn(
+                    'text-xs',
+                    c.severity === 'error' ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-400'
+                  )}>
+                    {c.message}
+                  </span>
+                </div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <EmployeeSelect
           label="Employé"
           required
-          placeholder="— Sélectionnez un employé —"
-          options={employeeOptions}
+          employees={employees}
+          value={watchUserId}
+          onChange={(id) => setValue('user_id', id, { shouldValidate: true })}
           error={errors.user_id?.message}
-          {...register('user_id')}
         />
 
-        <Select
+        {/* Employee info panel */}
+        <AnimatePresence>
+          {watchUserId && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+            >
+              <EmployeeInfoPanel
+                employeeId={watchUserId}
+                weekNumber={weekNumber}
+                year={year}
+                date={date}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <ShiftSelect
           label="Shift"
           required
-          placeholder="— Sélectionnez un shift —"
-          options={shiftOptions}
+          shifts={activeShifts}
+          value={watchShiftId}
+          onChange={(id) => setValue('shift_id', id, { shouldValidate: true })}
           error={errors.shift_id?.message}
-          {...register('shift_id')}
         />
 
-        <Select
-          label="Équipe (optionnel)"
-          options={teamOptions}
-          {...register('team_id')}
-        />
+        {/* Shift info panel */}
+        <AnimatePresence>
+          {selectedShift && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+            >
+              <ShiftInfoPanel shift={selectedShift} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="space-y-1">
+          {defaultTeamId && (() => {
+            const selectedTeam = teams.find((t) => String(t.id) === String(defaultTeamId))
+            return selectedTeam ? (
+              <div className="flex items-center gap-1.5 px-0.5">
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{ backgroundColor: selectedTeam.color || '#6172f3' }}
+                />
+                <span className="text-2xs text-slate-400">
+                  Équipe pré-sélectionnée : {selectedTeam.name}
+                </span>
+              </div>
+            ) : null
+          })()}
+          <Select
+            label="Équipe (optionnel)"
+            options={teamOptions}
+            {...register('team_id')}
+          />
+        </div>
 
         <Input
           label="Notes (optionnel)"

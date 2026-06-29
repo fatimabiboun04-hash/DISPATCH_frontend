@@ -40,3 +40,9 @@ export const selectActivePausesLoading = (state) => state.dashboard.activePauses
 export const selectWeeklyHistory    = (state) => state.dashboard.weeklyHistory
 export const selectWeeklyHistoryLoading = (state) => state.dashboard.weeklyHistoryLoading
 export const selectWeeklyHistoryError   = (state) => state.dashboard.weeklyHistoryError
+
+// Rating stats derived from dashboard stats
+export const selectTotalRated       = createSelector([selectStats], (s) => s?.ratings?.total_rated ?? 0)
+export const selectAverageRating    = createSelector([selectStats], (s) => s?.ratings?.average_score ?? 0)
+export const selectFiveStarCount    = createSelector([selectStats], (s) => s?.ratings?.five_star_count ?? 0)
+export const selectNeedsImprovement = createSelector([selectStats], (s) => s?.ratings?.needs_improvement_count ?? 0)

@@ -20,6 +20,7 @@ import settingsReducer      from '../features/settings/settingsSlice'
 import deviceReducer        from '../features/devices/deviceSlice'
 import taskReducer          from '../features/tasks/taskSlice'
 import skillReducer         from '../features/skills/skillSlice'
+import searchReducer        from '../features/search/searchSlice'
 
 const appReducer = combineReducers({
   auth:          authReducer,
@@ -43,6 +44,7 @@ const appReducer = combineReducers({
   devices:       deviceReducer,
   tasks:         taskReducer,
   skills:        skillReducer,
+  search:        searchReducer,
 })
 
 const rootReducer = (state, action) => {
