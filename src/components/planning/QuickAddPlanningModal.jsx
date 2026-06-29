@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion, AnimatePresence } from 'framer-motion'
-import { AlertTriangle, XCircle } from 'lucide-react'
+import { AlertTriangle, XCircle, ArrowRight } from 'lucide-react'
 import { createPlanningThunk } from '../../features/planning/planningThunks'
 import {
   selectPlanningSubmitting,
@@ -226,12 +226,23 @@ const QuickAddPlanningModal = ({
                   ) : (
                     <AlertTriangle className="h-3 w-3 text-amber-500 mt-0.5 flex-shrink-0" />
                   )}
-                  <span className={cn(
-                    'text-xs',
-                    c.severity === 'error' ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-400'
-                  )}>
-                    {c.message}
-                  </span>
+                  <div className="min-w-0">
+                    <span className={cn(
+                      'text-xs',
+                      c.severity === 'error' ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-400'
+                    )}>
+                      {c.message}
+                    </span>
+                    {c.suggestion && (
+                      <p className={cn(
+                        'mt-0.5 text-2xs flex items-start gap-1',
+                        c.severity === 'error' ? 'text-red-500/70' : 'text-amber-600/70'
+                      )}>
+                        <ArrowRight className="mt-0.5 h-2.5 w-2.5 flex-shrink-0" />
+                        {c.suggestion}
+                      </p>
+                    )}
+                  </div>
                 </div>
               ))}
             </motion.div>

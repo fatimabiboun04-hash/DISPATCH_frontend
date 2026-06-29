@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   AlertTriangle, X, Clock, Users, Zap, Shield,
-  FileX, Lock,
+  FileX, Lock, Coffee, Moon, UserX, ArrowRight,
 } from 'lucide-react'
 import { Button, Badge } from '../ui'
 import { cn } from '../../utils/cn'
@@ -13,6 +13,9 @@ const CONFLICT_ICONS = {
   rest_period_violation: Clock,
   weekly_hours_exceeded: Zap,
   duplicate_shift: Lock,
+  missing_pause: Coffee,
+  consecutive_nights_exceeded: Moon,
+  employee_unavailable: UserX,
 }
 
 const CONFLICT_COLORS = {
@@ -22,6 +25,9 @@ const CONFLICT_COLORS = {
   rest_period_violation: 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-900/10',
   weekly_hours_exceeded: 'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/10',
   duplicate_shift: 'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/10',
+  missing_pause: 'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/10',
+  consecutive_nights_exceeded: 'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/10',
+  employee_unavailable: 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-900/10',
 }
 
 const ConflictVisualizer = ({ conflicts = [], onDismiss, className }) => {
@@ -87,6 +93,12 @@ const ConflictVisualizer = ({ conflicts = [], onDismiss, className }) => {
                         <p className="font-medium text-slate-800 dark:text-slate-200">
                           {conflict.message}
                         </p>
+                        {conflict.suggestion && (
+                          <p className="mt-1 flex items-start gap-1 text-2xs text-slate-500 dark:text-slate-400">
+                            <ArrowRight className="mt-0.5 h-2.5 w-2.5 flex-shrink-0" />
+                            {conflict.suggestion}
+                          </p>
+                        )}
                       </div>
                       <Badge size="sm" className={cn('text-2xs flex-shrink-0', severityColor)}>
                         {severityLabel}

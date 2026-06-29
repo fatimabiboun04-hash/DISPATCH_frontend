@@ -16,6 +16,7 @@ import { API }              from '../../constants/apiRoutes'
 
 const schema = z.object({
   user_id:  z.string().min(1, 'Employé requis'),
+  planning_id: z.string().min(1, 'Planning requis'),
   title:    z.string().min(1, 'Le titre est requis').max(255),
   description: z.string().optional(),
   status:   z.enum(['pending', 'in_progress', 'completed', 'cancelled']).optional(),
@@ -49,6 +50,8 @@ const TaskFormModal = ({
   const isEdit      = !!task
 
   const [employees, setEmployees] = useState([])
+  const [planningOptions, setPlanningOptions] = useState([])
+  const [planningLoading, setPlanningLoading] = useState(false)
 
   useEffect(() => {
     if (open) {
@@ -59,15 +62,36 @@ const TaskFormModal = ({
     }
   }, [open, dispatch])
 
+  const selectedUserId = watch('user_id')
+
+  useEffect(() => {
+    if (!selectedUserId) {
+      setPlanningOptions([])
+      return
+    }
+    setPlanningLoading(true)
+    axiosInstance.get(API.PLANNING.LIST, {
+      params: { user_id: selectedUserId, per_page: 20 },
+    }).then((res) => {
+      const data = res.data?.data || []
+      setPlanningOptions(data.map((p) => ({
+        value: String(p.id),
+        label: `${p.date} — ${p.shift?.name || ''}`,
+      })))
+    }).catch(() => {}).finally(() => setPlanningLoading(false))
+  }, [selectedUserId])
+
   const {
     register,
     handleSubmit,
+    watch,
     reset,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
       user_id:     '',
+      planning_id: '',
       title:       '',
       description: '',
       status:      'pending',
@@ -81,6 +105,7 @@ const TaskFormModal = ({
       if (isEdit) {
         reset({
           user_id:     String(task.user_id || ''),
+          planning_id: String(task.planning_id || ''),
           title:       task.title || '',
           description: task.description || '',
           status:      task.status || 'pending',
@@ -90,6 +115,7 @@ const TaskFormModal = ({
       } else {
         reset({
           user_id:     '',
+          planning_id: '',
           title:       '',
           description: '',
           status:      'pending',
@@ -103,6 +129,7 @@ const TaskFormModal = ({
   const onSubmit = async (formData) => {
     const payload = {
       user_id:     Number(formData.user_id),
+      planning_id: Number(formData.planning_id),
       title:       formData.title,
       description: formData.description || null,
       status:      formData.status || 'pending',
@@ -166,6 +193,18 @@ const TaskFormModal = ({
           }))}
           error={errors.user_id?.message}
           {...register('user_id')}
+        />
+
+        <Select
+          label="Planning"
+          required
+          placeholder="Sélectionner un planning"
+          options={[
+            { value: '', label: planningLoading ? 'Chargement...' : '— Sélectionner un planning —' },
+            ...planningOptions,
+          ]}
+          error={errors.planning_id?.message}
+          {...register('planning_id')}
         />
 
         <Input

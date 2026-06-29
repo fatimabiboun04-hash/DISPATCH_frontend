@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
-import { useDispatch, useSelector }          from 'react-redux'
-import { getISOWeek, getISOWeekYear }        from 'date-fns'
-import { motion }                            from 'framer-motion'
-import { usePlanning }                       from '../../hooks/usePlanning'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { useDispatch, useSelector }                  from 'react-redux'
+import { getISOWeek, getISOWeekYear }                from 'date-fns'
+import { motion, AnimatePresence }                   from 'framer-motion'
+import { usePlanning }                               from '../../hooks/usePlanning'
 import { fetchPlanningThunk, deletePlanningThunk } from '../../features/planning/planningThunks'
 import { selectPlanningFilters, selectPlanningError } from '../../features/planning/planningSelectors'
 import { selectTeamList } from '../../features/teams/teamSelectors'
@@ -10,6 +10,8 @@ import { fetchTeamsThunk }   from '../../features/teams/teamThunks'
 import { fetchShiftsThunk }  from '../../features/shifts/shiftThunks'
 import { fetchPlanningStatsThunk } from '../../features/planning/planningStatsSlice'
 import { selectStatsData } from '../../features/planning/planningStatsSelectors'
+import { fetchStatsThunk, fetchCoverageThunk, fetchActivePausesThunk } from '../../features/dashboard/dashboardThunks'
+import { fetchNotificationsThunk, fetchUnreadCountThunk } from '../../features/notifications/notificationThunks'
 import PlanningToolbar       from '../../components/planning/PlanningToolbar'
 import PlanningFilters       from '../../components/planning/PlanningFilters'
 import PlanningGrid          from '../../components/planning/PlanningGrid'
@@ -17,10 +19,12 @@ import PlanningLockBanner    from '../../components/planning/PlanningLockBanner'
 import ConflictBanner        from '../../components/planning/ConflictBanner'
 import PlanningDrawer        from '../../components/planning/PlanningDrawer'
 import QuickAddPlanningModal from '../../components/planning/QuickAddPlanningModal'
+import PauseFormModal        from '../../components/planning/PauseFormModal'
 import BatchToolbar          from '../../components/planning/BatchToolbar'
 import WeeklySummary         from '../../components/planning/WeeklySummary'
 import SandboxPanel          from '../../components/planning/SandboxPanel'
 import { ErrorState, ConfirmDialog } from '../../components/ui'
+import { Calendar, Coffee } from 'lucide-react'
 import axiosInstance         from '../../services/axiosInstance'
 import { API }               from '../../constants/apiRoutes'
 import toast                 from 'react-hot-toast'
@@ -48,8 +52,19 @@ const PlanningPage = () => {
   const [drawerPlanning,setDrawerPlanning]= useState(null)
 
   // Quick add modal state
-  const [addOpen,  setAddOpen]  = useState(false)
-  const [addDate,  setAddDate]  = useState(null)
+  const [addOpen,    setAddOpen]    = useState(false)
+  const [addDate,    setAddDate]    = useState(null)
+
+  // Add menu popover state
+  const [addMenuDay, setAddMenuDay] = useState(null)
+  const [addMenuOpen, setAddMenuOpen] = useState(false)
+  const addMenuRef = useRef(null)
+
+  // Pause modal state
+  const [pauseOpen,    setPauseOpen]    = useState(false)
+  const [pauseDate,    setPauseDate]    = useState(null)
+  const [pauseEmps,    setPauseEmps]    = useState([])
+  const [pausePlanningId, setPausePlanningId] = useState(null)
 
   // Delete from grid (without drawer)
   const [deleteTarget,   setDeleteTarget]   = useState(null)
@@ -57,6 +72,8 @@ const PlanningPage = () => {
 
   // Dropdown data for modals
   const [employees, setEmployees] = useState([])
+  const [employeesLoading, setEmployeesLoading] = useState(false)
+  const employeesAbortRef = useRef(null)
 
   const reduxTeams = useSelector(selectTeamList)
   const stats = useSelector(selectStatsData)
@@ -65,12 +82,45 @@ const PlanningPage = () => {
     dispatch(fetchPlanningStatsThunk({ week_number: weekNum, year }))
   }, [dispatch, weekNum, year])
 
+  const fetchEmployees = useCallback(async () => {
+    if (employeesAbortRef.current) {
+      employeesAbortRef.current.abort()
+    }
+    const controller = new AbortController()
+    employeesAbortRef.current = controller
+    setEmployeesLoading(true)
+    try {
+      const empRes = await axiosInstance.get(API.EMPLOYEES.LIST, {
+        params: { per_page: 200, status: 'active' },
+        signal: controller.signal,
+      })
+      if (!controller.signal.aborted) {
+        setEmployees(empRes.data.data || [])
+      }
+    } catch (err) {
+      if (err.name !== 'CanceledError' && !controller.signal.aborted) {
+        toast.error('Impossible de charger les employés')
+        setEmployees([])
+      }
+    } finally {
+      if (!controller.signal.aborted) {
+        setEmployeesLoading(false)
+      }
+    }
+  }, [])
+
   useEffect(() => {
     dispatch(fetchShiftsThunk())
     if (reduxTeams.length === 0) {
       dispatch(fetchTeamsThunk({}))
     }
     fetchWeek(weekDate, filters)
+    fetchEmployees()
+    return () => {
+      if (employeesAbortRef.current) {
+        employeesAbortRef.current.abort()
+      }
+    }
   }, []) // eslint-disable-line
 
   useEffect(() => {
@@ -94,32 +144,24 @@ const PlanningPage = () => {
     dispatch(fetchPlanningThunk(params))
   }, [dispatch, weekNum, year, filters])
 
-  useEffect(() => {
-    const abortController = new AbortController()
-    const fetchMeta = async () => {
-      try {
-        const empRes = await axiosInstance.get(API.EMPLOYEES.LIST, {
-          params: { per_page: 200, status: 'active' },
-          signal: abortController.signal,
-        })
-        if (!abortController.signal.aborted) {
-          setEmployees(empRes.data.data || [])
-        }
-      } catch (err) {
-        if (err.name !== 'CanceledError' && !abortController.signal.aborted) {
-          toast.error('Impossible de charger les employés')
-          setEmployees([])
-        }
-      }
-    }
-    fetchMeta()
-    return () => abortController.abort()
-  }, [])
+  const refreshDashboard = useCallback(() => {
+    dispatch(fetchStatsThunk())
+    dispatch(fetchCoverageThunk())
+    dispatch(fetchActivePausesThunk())
+  }, [dispatch])
 
-  const handleRefresh = () => {
+  const refreshNotifications = useCallback(() => {
+    dispatch(fetchNotificationsThunk())
+    dispatch(fetchUnreadCountThunk())
+  }, [dispatch])
+
+  const handleRefresh = useCallback(() => {
     fetchWeek(weekDate, filters)
     fetchStats()
-  }
+    fetchEmployees()
+    refreshDashboard()
+    refreshNotifications()
+  }, [fetchWeek, weekDate, filters, fetchStats, fetchEmployees, refreshDashboard, refreshNotifications])
 
   const handleCardClick = (planning) => {
     setDrawerPlanning(planning)
@@ -138,6 +180,7 @@ const PlanningPage = () => {
     if (deletePlanningThunk.fulfilled.match(result)) {
       toast.success('Assignation supprimée')
       setDeleteTarget(null)
+      handleRefresh()
     } else {
       toast.error('Erreur lors de la suppression')
     }
@@ -156,9 +199,38 @@ const PlanningPage = () => {
     return () => window.removeEventListener('keydown', handleKey)
   }, [days])
 
+  // Close add menu on outside click
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (addMenuRef.current && !addMenuRef.current.contains(e.target)) {
+        setAddMenuOpen(false)
+      }
+    }
+    if (addMenuOpen) {
+      document.addEventListener('mousedown', handleClick)
+      return () => document.removeEventListener('mousedown', handleClick)
+    }
+  }, [addMenuOpen])
+
   const handleAddClick = (day) => {
-    setAddDate(day.date)
+    setAddMenuDay(day)
+    setAddMenuOpen(true)
+  }
+
+  const handleAddAssignment = () => {
+    if (!addMenuDay) return
+    setAddDate(addMenuDay.date)
     setAddOpen(true)
+    setAddMenuOpen(false)
+  }
+
+  const handleAddPause = () => {
+    if (!addMenuDay) return
+    setPauseDate(addMenuDay.date)
+    setPauseEmps(employees)
+    setPausePlanningId(null)
+    setPauseOpen(true)
+    setAddMenuOpen(false)
   }
 
   const isCurrentWeek =
@@ -234,9 +306,10 @@ const PlanningPage = () => {
         onRefresh={handleRefresh}
       />
 
-      {/* Weekly grid with DnD */}
+      {/* Weekly scheduling grid */}
       <PlanningGrid
         days={days}
+        employees={employees}
         onCardClick={handleCardClick}
         onCardDelete={handleCardDelete}
         onAddClick={handleAddClick}
@@ -255,7 +328,55 @@ const PlanningPage = () => {
         onRefresh={handleRefresh}
       />
 
-      {/* Quick add modal */}
+      {/* Add menu popover — positioned next to the grid */}
+      <AnimatePresence>
+        {addMenuOpen && addMenuDay && (
+          <motion.div
+            ref={addMenuRef}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
+                       w-56 rounded-xl border border-surface-200 bg-white p-2 shadow-xl
+                       dark:border-dark-500 dark:bg-dark-700"
+          >
+            <p className="px-2 py-1.5 text-2xs font-semibold uppercase tracking-wider text-slate-400">
+              Ajouter pour {addMenuDay.label} {addMenuDay.dayNum}
+            </p>
+            <div className="mt-1 space-y-0.5">
+              <button
+                onClick={handleAddAssignment}
+                className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-sm
+                           text-slate-700 hover:bg-brand-50 hover:text-brand-600
+                           dark:text-slate-200 dark:hover:bg-brand-900/20 dark:hover:text-brand-400"
+              >
+                <Calendar className="h-4 w-4" />
+                Assignation planning
+              </button>
+
+              <button
+                onClick={handleAddPause}
+                className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-sm
+                           text-slate-700 hover:bg-brand-50 hover:text-brand-600
+                           dark:text-slate-200 dark:hover:bg-brand-900/20 dark:hover:text-brand-400"
+              >
+                <Coffee className="h-4 w-4" />
+                Pause
+              </button>
+            </div>
+            <div className="mt-2 border-t border-surface-100 pt-1.5 dark:border-dark-500">
+              <button
+                onClick={() => setAddMenuOpen(false)}
+                className="w-full rounded-lg px-2 py-1.5 text-xs text-slate-400 hover:bg-surface-50 dark:hover:bg-dark-600"
+              >
+                Annuler
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Quick add: planning assignment modal */}
       <QuickAddPlanningModal
         open={addOpen}
         onClose={() => setAddOpen(false)}
@@ -266,6 +387,18 @@ const PlanningPage = () => {
         onSuccess={handleRefresh}
         weekNumber={weekNum}
         year={year}
+      />
+
+      {/* Quick add: pause modal */}
+      <PauseFormModal
+        open={pauseOpen}
+        onClose={() => setPauseOpen(false)}
+        planningId={pausePlanningId}
+        users={pauseEmps}
+        teams={reduxTeams}
+        shiftStart="06:00"
+        shiftEnd="22:00"
+        onSuccess={handleRefresh}
       />
 
       {/* Delete confirmation (from grid row button) */}

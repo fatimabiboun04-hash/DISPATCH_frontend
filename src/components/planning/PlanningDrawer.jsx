@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   Calendar, Clock, Users, Lock, Unlock,
   Trash2, UserPlus, Award, Edit3, X,
-  Copy, Save,
+  Copy, Save, ExternalLink, History, ListChecks, Plus,
 } from 'lucide-react'
 import { fetchPausesByPlanningThunk } from '../../features/pauses/pauseThunks'
 import {
@@ -19,10 +20,11 @@ import {
 } from '../../features/planning/planningSelectors'
 import { selectActiveShifts } from '../../features/shifts/shiftSelectors'
 import { selectTeamList } from '../../features/teams/teamSelectors'
-import SmartSuggestionList from './SmartSuggestionList'
-import PauseLayer          from './PauseLayer'
-import HoursDetail         from './HoursDetail'
-import ShiftSelect         from './ShiftSelect'
+import SmartSuggestionList  from './SmartSuggestionList'
+import PauseLayer           from './PauseLayer'
+import HoursDetail          from './HoursDetail'
+import ShiftSelect          from './ShiftSelect'
+import QuickAddTaskModal    from './QuickAddTaskModal'
 import { Drawer, Avatar, Badge, Button,
          ConfirmDialog, Tooltip, SkillBadge } from '../ui'
 import { getShiftColor }   from '../../constants/shiftColors'
@@ -38,6 +40,7 @@ const PlanningDrawer = ({
   onRefresh,
 }) => {
   const dispatch        = useDispatch()
+  const navigate        = useNavigate()
   const submitting      = useSelector(selectPlanningSubmitting)
   const activeShifts    = useSelector(selectActiveShifts)
   const teams           = useSelector(selectTeamList)
@@ -46,11 +49,13 @@ const PlanningDrawer = ({
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [assigningId,     setAssigningId]     = useState(null)
   const [deleteOpen,      setDeleteOpen]      = useState(false)
+  const [taskModalOpen,   setTaskModalOpen]   = useState(false)
   const [deleting,        setDeleting]        = useState(false)
   const [overriding,      setOverriding]      = useState(false)
   const [locking,         setLocking]         = useState(false)
   const [editing,         setEditing]         = useState(false)
   const [saving,          setSaving]          = useState(false)
+  const [saveError,       setSaveError]       = useState(null)
 
   // Duplicate state
   const [dupOpen,    setDupOpen]    = useState(false)
@@ -73,6 +78,7 @@ const PlanningDrawer = ({
     }
     setShowSuggestions(false)
     setEditing(false)
+    setSaveError(null)
     if (planning) {
       setEditShiftId(planning.shift_id)
       setEditTeamId(planning.team_id || null)
@@ -140,6 +146,7 @@ const PlanningDrawer = ({
 
   const handleSaveEdit = async () => {
     setSaving(true)
+    setSaveError(null)
     const result = await dispatch(updatePlanningThunk({
       id: planning.id,
       data: {
@@ -156,7 +163,8 @@ const PlanningDrawer = ({
       setEditing(false)
       onRefresh?.()
     } else {
-      toast.error('Erreur lors de la modification')
+      const msg = result.payload?.message || result.payload?.errors?.[0] || 'Erreur lors de la modification'
+      setSaveError(msg)
     }
   }
 
@@ -289,6 +297,11 @@ const PlanningDrawer = ({
           )}>
             {editing ? (
               <div className="space-y-3">
+                {saveError && (
+                  <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 dark:border-red-800 dark:bg-red-900/20">
+                    <p className="text-xs text-red-600 dark:text-red-400">{saveError}</p>
+                  </div>
+                )}
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                   Shift
                 </p>
@@ -387,6 +400,25 @@ const PlanningDrawer = ({
                   <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
                     {planning.user.name}
                   </p>
+                  <div className="mt-1 flex items-center gap-1.5">
+                    <button
+                      onClick={() => navigate(`/admin/employees/${planning.user.id}`)}
+                      className="inline-flex items-center gap-0.5 text-2xs text-brand-500 hover:text-brand-600 transition-colors"
+                    >
+                      <ExternalLink className="h-2.5 w-2.5" />
+                      Profil
+                    </button>
+                    <span className="text-2xs text-slate-300">·</span>
+                    <Tooltip content="Voir l'historique des assignations">
+                      <button
+                        onClick={() => navigate(`/admin/employees/${planning.user.id}?tab=planning`)}
+                        className="inline-flex items-center gap-0.5 text-2xs text-slate-400 hover:text-slate-600 transition-colors"
+                      >
+                        <History className="h-2.5 w-2.5" />
+                        Historique
+                      </button>
+                    </Tooltip>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -520,6 +552,40 @@ const PlanningDrawer = ({
             planningId={planning.id}
             planning={planning}
             isLocked={isLocked}
+          />
+
+          {/* ── Tasks ─────────────────────────────────── */}
+          <div className="rounded-xl border border-surface-100 p-4 dark:border-dark-600">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <ListChecks className="h-4 w-4 text-slate-400" />
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  Tâches
+                </p>
+              </div>
+              {!isLocked && (
+                <Button
+                  variant="ghost" size="sm"
+                  leftIcon={<Plus className="h-3.5 w-3.5" />}
+                  onClick={() => setTaskModalOpen(true)}
+                  className="text-brand-500 dark:text-brand-400"
+                >
+                  Ajouter
+                </Button>
+              )}
+            </div>
+            <p className="text-2xs text-slate-400">
+              Gérez les tâches liées à cette assignation
+            </p>
+          </div>
+
+          <QuickAddTaskModal
+            open={taskModalOpen}
+            onClose={() => setTaskModalOpen(false)}
+            date={planning.date}
+            employees={planning.user ? [planning.user] : []}
+            planningId={planning.id}
+            onSuccess={onRefresh}
           />
 
           {/* ── Creator info ──────────────────────────── */}

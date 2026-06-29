@@ -1,7 +1,8 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   AlertTriangle, Clock, Users, Zap, Shield,
-  FileX, Lock, X, Eye, ArrowRight,
+  FileX, Lock, X, Eye, ArrowRight, Coffee,
+  Moon, UserX,
 } from 'lucide-react'
 import { Button, Badge, Tooltip } from '../ui'
 import { cn } from '../../utils/cn'
@@ -14,6 +15,9 @@ const CONFLICT_ICONS = {
   weekly_hours_exceeded: Zap,
   duplicate_shift: Lock,
   overlap: Users,
+  missing_pause: Coffee,
+  consecutive_nights_exceeded: Moon,
+  employee_unavailable: UserX,
 }
 
 const CONFLICT_LABELS = {
@@ -24,6 +28,9 @@ const CONFLICT_LABELS = {
   weekly_hours_exceeded: 'Heures dépassées',
   duplicate_shift: 'Shift en double',
   overlap: 'Chevauchement',
+  missing_pause: 'Pause manquante',
+  consecutive_nights_exceeded: 'Nuits consécutives',
+  employee_unavailable: 'Employé indisponible',
 }
 
 const ConflictPanel = ({
@@ -107,6 +114,21 @@ const ConflictPanel = ({
                     )}>
                       {msg}
                     </p>
+
+                    {err.suggestion && (
+                      <div className="mt-1.5 flex items-start gap-1.5 rounded-lg border border-current/20 bg-white/50 p-2 dark:bg-black/10">
+                        <ArrowRight className={cn(
+                          'mt-0.5 h-3 w-3 flex-shrink-0',
+                          severity === 'error' ? 'text-red-400' : 'text-amber-400'
+                        )} />
+                        <p className={cn(
+                          'text-2xs leading-relaxed',
+                          severity === 'error' ? 'text-red-500 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'
+                        )}>
+                          {err.suggestion}
+                        </p>
+                      </div>
+                    )}
 
                     {details && type === 'overlap' && (
                       <div className="mt-2 rounded-lg border border-red-200 bg-white/50 p-2.5 space-y-1 dark:border-red-700/50 dark:bg-red-900/5">
