@@ -49,6 +49,25 @@ const TaskFormModal = ({
   const submitError = useSelector(selectTasksSubmitError)
   const isEdit      = !!task
 
+  const {
+    register,
+    handleSubmit,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      user_id:     '',
+      planning_id: '',
+      title:       '',
+      description: '',
+      status:      'pending',
+      priority:    'medium',
+      due_date:    '',
+    },
+  })
+
   const [employees, setEmployees] = useState([])
   const [planningOptions, setPlanningOptions] = useState([])
   const [planningLoading, setPlanningLoading] = useState(false)
@@ -80,25 +99,6 @@ const TaskFormModal = ({
       })))
     }).catch(() => {}).finally(() => setPlanningLoading(false))
   }, [selectedUserId])
-
-  const {
-    register,
-    handleSubmit,
-    watch,
-    reset,
-    formState: { errors },
-  } = useForm({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      user_id:     '',
-      planning_id: '',
-      title:       '',
-      description: '',
-      status:      'pending',
-      priority:    'medium',
-      due_date:    '',
-    },
-  })
 
   useEffect(() => {
     if (open) {

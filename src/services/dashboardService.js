@@ -10,13 +10,11 @@ import { API } from '../constants/apiRoutes'
  */
 const dashboardService = {
   /**
-   * GET /v1/dashboard/stats
-   * Returns: { coverage:{percentage,active,total}, delays_today,
-   *            pending_leaves, flagged_pointages, today_assignments,
-   *            current_week, current_year }
+   * GET /v1/dashboard/stats?week_number=&year=
+   * Returns comprehensive dashboard data including cards, charts, KPIs, alerts.
    */
-  getStats: async () => {
-    const res = await axiosInstance.get(API.DASHBOARD.STATS)
+  getStats: async (params = {}) => {
+    const res = await axiosInstance.get(API.DASHBOARD.STATS, { params })
     return res.data.data
   },
 
@@ -31,11 +29,11 @@ const dashboardService = {
   },
 
   /**
-   * GET /v1/dashboard/coverage
+   * GET /v1/dashboard/coverage?week_number=&year=
    * Returns: array of 7 { date, day_name, assigned, checked_in, coverage }
    */
-  getCoverage: async () => {
-    const res = await axiosInstance.get(API.DASHBOARD.COVERAGE)
+  getCoverage: async (params = {}) => {
+    const res = await axiosInstance.get(API.DASHBOARD.COVERAGE, { params })
     return res.data.data
   },
 

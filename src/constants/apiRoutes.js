@@ -16,6 +16,7 @@ export const API = {
   ME: {
     PROFILE:          `${BASE}/me`,
     PLANNING:         `${BASE}/me/planning`,
+    DASHBOARD:        `${BASE}/me/dashboard`,
     POINTAGES:        `${BASE}/me/pointages`,
     LEAVE_REQUESTS:   `${BASE}/me/leave-requests`,
     HISTORY:          `${BASE}/me/history`,

@@ -1,26 +1,22 @@
-import { Edit2, Trash2 } from 'lucide-react'
-import { Button, Tooltip } from '../ui'
+import { Edit2, Trash2, Ban, CheckCircle2 } from 'lucide-react'
+import { Button, Tooltip, Badge } from '../ui'
 import { getAvatarData }   from '../../utils/avatarGenerator'
 import { cn }              from '../../utils/cn'
 
-/**
- * PauseRow — single pause in the pause layer.
- *
- * Pause data shape (from getByPlanning):
- *   { id, user_id, team_id, planning_id,
- *     pause_start: 'HH:mm', pause_end: 'HH:mm',
- *     duration_minutes, is_active,
- *     user: { id, name, avatar_url }?,
- *     team: { id, name }? }
- *
- * Display only — pause does NOT count toward 44h.
- * Per spec: "Similar to planning but simpler. Display only."
- */
-const PauseRow = ({ pause, onEdit, onDelete }) => {
+const STATUS_BADGE = {
+  cancelled: { label: 'Annulée', variant: 'danger' },
+  completed: { label: 'Terminée', variant: 'success' },
+  expired:   { label: 'Expirée',  variant: 'warning' },
+}
+
+const PauseRow = ({ pause, onEdit, onDelete, onCancel, onComplete }) => {
   const { gradient, initials } = getAvatarData(pause.user?.name || '')
   const name    = pause.user?.name || pause.team?.name || '—'
   const isTeam  = !!pause.team_id && !pause.user_id
   const isActive = pause.is_active
+  const isCancellable = pause.is_cancellable || ['scheduled', 'active'].includes(pause.status)
+  const isEditable    = pause.is_editable    || pause.status === 'scheduled'
+  const statusInfo    = STATUS_BADGE[pause.status]
 
   return (
     <div className={cn(
@@ -55,6 +51,13 @@ const PauseRow = ({ pause, onEdit, onDelete }) => {
         )}
       </span>
 
+      {/* Status badge */}
+      {statusInfo && (
+        <Badge variant={statusInfo.variant} className="text-2xs">
+          {statusInfo.label}
+        </Badge>
+      )}
+
       {/* Time window */}
       <div className="flex items-center gap-1 flex-shrink-0">
         {isActive && (
@@ -73,27 +76,57 @@ const PauseRow = ({ pause, onEdit, onDelete }) => {
       {/* Actions */}
       <div className="flex items-center gap-1
                       opacity-0 group-hover:opacity-100 transition-opacity">
-        <Tooltip content="Modifier">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0"
-            onClick={() => onEdit?.(pause)}
-          >
-            <Edit2 className="h-3 w-3" />
-          </Button>
-        </Tooltip>
-        <Tooltip content="Supprimer">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0 text-red-400 hover:bg-red-50
-                       hover:text-red-600 dark:hover:bg-red-900/20"
-            onClick={() => onDelete?.(pause)}
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        </Tooltip>
+        {isEditable && (
+          <Tooltip content="Modifier">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0"
+              onClick={() => onEdit?.(pause)}
+            >
+              <Edit2 className="h-3 w-3" />
+            </Button>
+          </Tooltip>
+        )}
+        {isCancellable && (
+          <Tooltip content="Annuler">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 text-amber-500 hover:bg-amber-50
+                         hover:text-amber-700 dark:hover:bg-amber-900/20"
+              onClick={() => onCancel?.(pause)}
+            >
+              <Ban className="h-3 w-3" />
+            </Button>
+          </Tooltip>
+        )}
+        {pause.status === 'active' && (
+          <Tooltip content="Terminer">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 text-green-500 hover:bg-green-50
+                         hover:text-green-700 dark:hover:bg-green-900/20"
+              onClick={() => onComplete?.(pause)}
+            >
+              <CheckCircle2 className="h-3 w-3" />
+            </Button>
+          </Tooltip>
+        )}
+        {isEditable && (
+          <Tooltip content="Supprimer">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 text-red-400 hover:bg-red-50
+                         hover:text-red-600 dark:hover:bg-red-900/20"
+              onClick={() => onDelete?.(pause)}
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </Tooltip>
+        )}
       </div>
     </div>
   )

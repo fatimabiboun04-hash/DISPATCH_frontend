@@ -9,7 +9,7 @@ import {
 import {
   Plus, Coffee, Lock, Trash2, Clock, Users,
   AlertTriangle, ChevronDown, ChevronRight, Star,
-  UserCheck, UserX, Briefcase,
+  UserCheck, UserX, Briefcase, ListChecks, Copy,
 } from 'lucide-react'
 import {
   selectPlanningByDate,
@@ -48,7 +48,7 @@ const getStatusForDay = (planning, pauses, onLeave) => {
 
 // ── Sub-components ────────────────────────────────────────────
 
-const DraggableCell = memo(({ planning, pauses, isWeekLocked, onCardClick, onCardDelete, isOnLeaveDay, day }) => {
+const DraggableCell = memo(({ planning, pauses, isWeekLocked, onCardClick, onCardDelete, isOnLeaveDay, day, onCopyClick }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({ id: String(planning.id) })
 
@@ -93,6 +93,10 @@ const DraggableCell = memo(({ planning, pauses, isWeekLocked, onCardClick, onCar
         <Coffee className="absolute right-1 top-3.5 h-2.5 w-2.5 text-slate-400" />
       )}
 
+      {planning.tasks_count > 0 && (
+        <ListChecks className="absolute right-1 top-5.5 h-2.5 w-2.5 text-brand-500" />
+      )}
+
       <div className="min-w-0 leading-tight">
         <p className={cn(
           'text-xs font-semibold truncate',
@@ -127,6 +131,24 @@ const DraggableCell = memo(({ planning, pauses, isWeekLocked, onCardClick, onCar
         <AlertTriangle className="absolute bottom-1 right-1 h-2.5 w-2.5 text-red-500" />
       )}
 
+      {canModify && onCopyClick && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onCopyClick(planning)
+            toast.success('Assignation copiée')
+          }}
+          className="absolute -top-1.5 right-3 z-10 flex h-4 w-4 items-center justify-center
+                     rounded-full border border-surface-200 bg-white text-slate-400
+                     opacity-0 shadow-xs transition-all duration-100
+                     hover:bg-brand-50 hover:text-brand-500
+                     group-hover:opacity-100
+                     dark:border-dark-400 dark:bg-dark-600"
+        >
+          <Copy className="h-2 w-2" />
+        </button>
+      )}
+
       {canModify && onCardDelete && (
         <button
           onClick={(e) => {
@@ -147,17 +169,17 @@ const DraggableCell = memo(({ planning, pauses, isWeekLocked, onCardClick, onCar
   )
 })
 
-const EmptyDroppableCell = memo(({ droppableId, day, isWeekLocked, isOnLeaveDay, onAddClick }) => {
+const EmptyDroppableCell = memo(({ droppableId, day, isWeekLocked, isOnLeaveDay, onAddClick, hasClipboard, onPasteClick }) => {
   const { isOver, setNodeRef } = useDroppable({ id: droppableId })
 
   return (
-    <div ref={setNodeRef} className="h-full">
+    <div ref={setNodeRef} className="h-full flex gap-1">
       <Tooltip content={`Ajouter au ${day.label} ${day.dayNum}`}>
         <button
           onClick={() => onAddClick?.(day)}
           disabled={isWeekLocked}
           className={cn(
-            'flex h-full min-h-[56px] w-full items-center justify-center',
+            'flex-1 flex items-center justify-center',
             'rounded-lg border border-dashed transition-all duration-100',
             isWeekLocked
               ? 'border-surface-100 text-slate-200 cursor-not-allowed dark:border-dark-600 dark:text-dark-500'
@@ -169,6 +191,20 @@ const EmptyDroppableCell = memo(({ droppableId, day, isWeekLocked, isOnLeaveDay,
           <Plus className="h-3.5 w-3.5" />
         </button>
       </Tooltip>
+      {hasClipboard && onPasteClick && !isWeekLocked && (
+        <Tooltip content="Coller l'assignation">
+          <button
+            onClick={() => onPasteClick(day.date)}
+            className="flex items-center justify-center rounded-lg border border-dashed
+                       border-brand-300 bg-brand-50/50 text-brand-500
+                       hover:bg-brand-100 hover:text-brand-600
+                       dark:border-brand-700 dark:bg-brand-900/10 dark:hover:bg-brand-900/20
+                       transition-all duration-100 px-1"
+          >
+            <Copy className="h-3 w-3" />
+          </button>
+        </Tooltip>
+      )}
     </div>
   )
 })
@@ -217,6 +253,9 @@ const PlanningGrid = ({
   onCardDelete,
   onAddClick,
   onRefresh,
+  clipboardPlanning,
+  onCopyClick,
+  onPasteClick,
   className,
 }) => {
   const dispatch = useDispatch()
@@ -687,6 +726,7 @@ const PlanningGrid = ({
                           onCardDelete={handleCardDelete}
                           isOnLeaveDay={onLeave}
                           day={day}
+                          onCopyClick={onCopyClick}
                         />
                       </AssignedDroppableCell>
                     ) : (
@@ -696,6 +736,8 @@ const PlanningGrid = ({
                         isWeekLocked={hasLocked}
                         isOnLeaveDay={onLeave}
                         onAddClick={handleAddClick}
+                        hasClipboard={!!clipboardPlanning}
+                        onPasteClick={onPasteClick}
                       />
                     )}
                   </div>

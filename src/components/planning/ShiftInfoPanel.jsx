@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { Clock, Award } from 'lucide-react'
+import { Clock, Award, Users } from 'lucide-react'
 import { Badge, SkillBadge } from '../ui'
 import { getShiftColor } from '../../constants/shiftColors'
 import { cn } from '../../utils/cn'

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
@@ -6,8 +6,18 @@ import {
   Calendar, Clock, Users, Lock, Unlock,
   Trash2, UserPlus, Award, Edit3, X,
   Copy, Save, ExternalLink, History, ListChecks, Plus,
+  CheckCircle2, Circle, Flag,
 } from 'lucide-react'
 import { fetchPausesByPlanningThunk } from '../../features/pauses/pauseThunks'
+import {
+  fetchTasksThunk,
+  deleteTaskThunk,
+  updateTaskThunk,
+} from '../../features/tasks/taskThunks'
+import {
+  selectTasks,
+  selectTasksLoading,
+} from '../../features/tasks/taskSelectors'
 import {
   deletePlanningThunk,
   createPlanningThunk,
@@ -44,6 +54,8 @@ const PlanningDrawer = ({
   const submitting      = useSelector(selectPlanningSubmitting)
   const activeShifts    = useSelector(selectActiveShifts)
   const teams           = useSelector(selectTeamList)
+  const taskList        = useSelector(selectTasks)
+  const tasksLoading    = useSelector(selectTasksLoading)
   const dupDateRef      = useRef(null)
 
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -75,6 +87,7 @@ const PlanningDrawer = ({
   useEffect(() => {
     if (open && planning?.id) {
       dispatch(fetchPausesByPlanningThunk(planning.id))
+      dispatch(fetchTasksThunk({ planning_id: planning.id }))
     }
     setShowSuggestions(false)
     setEditing(false)
@@ -85,6 +98,21 @@ const PlanningDrawer = ({
       setEditNotes(planning.notes || '')
     }
   }, [open, planning?.id, dispatch, planning?.shift_id, planning?.team_id, planning?.notes])
+
+  const planningTasks = useMemo(
+    () => taskList.filter((t) => t.planning_id === planning?.id),
+    [taskList, planning?.id]
+  )
+
+  const handleToggleTask = async (task) => {
+    const newStatus = task.status === 'completed' ? 'pending' : 'completed'
+    await dispatch(updateTaskThunk({ id: task.id, data: { ...task, status: newStatus } }))
+  }
+
+  const handleDeleteTask = async (taskId) => {
+    await dispatch(deleteTaskThunk(taskId))
+    toast.success('Tâche supprimée')
+  }
 
   if (!planning) return null
 
@@ -555,13 +583,20 @@ const PlanningDrawer = ({
           />
 
           {/* ── Tasks ─────────────────────────────────── */}
-          <div className="rounded-xl border border-surface-100 p-4 dark:border-dark-600">
-            <div className="flex items-center justify-between mb-2">
+          <div className="rounded-xl border border-surface-100 dark:border-dark-600 overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-surface-100 dark:border-dark-600">
               <div className="flex items-center gap-2">
                 <ListChecks className="h-4 w-4 text-slate-400" />
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                   Tâches
                 </p>
+                {planningTasks.length > 0 && (
+                  <span className="rounded-full bg-brand-100 px-1.5 py-0.5
+                                   text-2xs font-bold text-brand-600
+                                   dark:bg-brand-900/30 dark:text-brand-400">
+                    {planningTasks.length}
+                  </span>
+                )}
               </div>
               {!isLocked && (
                 <Button
@@ -574,9 +609,57 @@ const PlanningDrawer = ({
                 </Button>
               )}
             </div>
-            <p className="text-2xs text-slate-400">
-              Gérez les tâches liées à cette assignation
-            </p>
+
+            <div className="p-3">
+              {tasksLoading ? (
+                <div className="space-y-1.5">
+                  {Array.from({ length: 2 }).map((_, i) => (
+                    <div key={i} className="h-8 rounded-lg bg-surface-100 dark:bg-dark-600 animate-pulse" />
+                  ))}
+                </div>
+              ) : planningTasks.length === 0 ? (
+                <p className="py-3 text-center text-xs text-slate-400">
+                  Aucune tâche pour cette assignation
+                </p>
+              ) : (
+                <div className="space-y-1">
+                  {planningTasks.map((task) => (
+                    <div key={task.id}
+                         className="group flex items-center gap-2 rounded-lg px-2 py-1.5
+                                    transition-colors hover:bg-surface-100 dark:hover:bg-dark-600">
+                      <button
+                        onClick={() => handleToggleTask(task)}
+                        className="flex-shrink-0 transition-colors"
+                      >
+                        {task.status === 'completed' ? (
+                          <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <Circle className="h-4 w-4 text-slate-300 dark:text-slate-500 hover:text-brand-500" />
+                        )}
+                      </button>
+                      <span className={cn(
+                        'flex-1 truncate text-xs',
+                        task.status === 'completed'
+                          ? 'text-slate-400 line-through'
+                          : 'text-slate-700 dark:text-slate-200'
+                      )}>
+                        {task.title}
+                      </span>
+                      {task.priority === 'high' && (
+                        <Flag className="h-3 w-3 text-red-400 flex-shrink-0" />
+                      )}
+                      <button
+                        onClick={() => handleDeleteTask(task.id)}
+                        className="flex-shrink-0 opacity-0 group-hover:opacity-100
+                                   text-slate-300 hover:text-red-500 transition-all"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <QuickAddTaskModal

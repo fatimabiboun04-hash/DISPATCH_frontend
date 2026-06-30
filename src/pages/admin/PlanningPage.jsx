@@ -3,7 +3,7 @@ import { useDispatch, useSelector }                  from 'react-redux'
 import { getISOWeek, getISOWeekYear }                from 'date-fns'
 import { motion, AnimatePresence }                   from 'framer-motion'
 import { usePlanning }                               from '../../hooks/usePlanning'
-import { fetchPlanningThunk, deletePlanningThunk } from '../../features/planning/planningThunks'
+import { fetchPlanningThunk, deletePlanningThunk, createPlanningThunk } from '../../features/planning/planningThunks'
 import { selectPlanningFilters, selectPlanningError } from '../../features/planning/planningSelectors'
 import { selectTeamList } from '../../features/teams/teamSelectors'
 import { fetchTeamsThunk }   from '../../features/teams/teamThunks'
@@ -69,6 +69,9 @@ const PlanningPage = () => {
   // Delete from grid (without drawer)
   const [deleteTarget,   setDeleteTarget]   = useState(null)
   const [deleting,       setDeleting]       = useState(false)
+
+  // Clipboard for copy/paste
+  const [clipboardPlanning, setClipboardPlanning] = useState(null)
 
   // Dropdown data for modals
   const [employees, setEmployees] = useState([])
@@ -224,6 +227,21 @@ const PlanningPage = () => {
     setAddMenuOpen(false)
   }
 
+  const handlePasteAssignment = useCallback(async (targetDate) => {
+    if (!clipboardPlanning) return
+    const result = await dispatch(createPlanningThunk({
+      user_id:  clipboardPlanning.user_id,
+      shift_id: clipboardPlanning.shift_id,
+      date:     targetDate,
+      team_id:  clipboardPlanning.team_id || undefined,
+      notes:    clipboardPlanning.notes || undefined,
+    }))
+    if (createPlanningThunk.fulfilled.match(result)) {
+      toast.success('Assignation collée')
+      handleRefresh()
+    }
+  }, [clipboardPlanning, dispatch, handleRefresh])
+
   const handleAddPause = () => {
     if (!addMenuDay) return
     setPauseDate(addMenuDay.date)
@@ -314,6 +332,9 @@ const PlanningPage = () => {
         onCardDelete={handleCardDelete}
         onAddClick={handleAddClick}
         onRefresh={handleRefresh}
+        clipboardPlanning={clipboardPlanning}
+        onCopyClick={setClipboardPlanning}
+        onPasteClick={handlePasteAssignment}
       />
 
       {/* Planning drawer */}

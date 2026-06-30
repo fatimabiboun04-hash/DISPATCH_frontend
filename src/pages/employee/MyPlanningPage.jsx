@@ -1,61 +1,41 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
-import { motion }        from 'framer-motion'
-import axiosInstance     from '../../services/axiosInstance'
-import { API }           from '../../constants/apiRoutes'
-import TimelineView      from '../../components/planning/TimelineView'
-import EmployeePauseList from '../../components/planning/EmployeePauseList'
-import WeekSelector      from '../../components/planning/WeekSelector'
-import { Tabs, Skeleton, ErrorState } from '../../components/ui'
-import { usePlanning }   from '../../hooks/usePlanning'
+import { motion } from 'framer-motion'
+import { Clock, Sun, Moon, Coffee, AlertTriangle } from 'lucide-react'
+import employeePlanningService from '../../services/employeePlanningService'
+import EmployeePlanningCard from '../../components/planning/EmployeePlanningCard'
+import WeekSelector from '../../components/planning/WeekSelector'
+import { Tabs, Skeleton, EmptyState } from '../../components/ui'
+import { usePlanning } from '../../hooks/usePlanning'
 
-/**
- * MyPlanningPage — /employee/my-planning
- *
- * Per spec:
- * "Simple execution view. They only need to know:
- *  What to do now / What comes next / When breaks occur / When the shift ends"
- *
- * Layout:
- *   Week selector → Day tabs (Mon-Sun) → Vertical timeline → Pause list
- *
- * Data:
- *   GET /v1/me/planning?week_number=&year=
- *   Returns PLAIN ARRAY (not paginated), loads shift only.
- *   orderBy('date') — already sorted.
- *
- * No admin complexity — mobile-first, no tables, no analytics.
- */
+const POLL_INTERVAL = 30000
 
-const DAY_SHORT = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+const formatDuration = (hours) => {
+  if (!hours && hours !== 0) return '0h'
+  const h = Math.floor(hours)
+  const m = Math.round((hours - h) * 60)
+  if (m === 0) return `${h}h`
+  return `${h}h${m}`
+}
 
 const MyPlanningPage = () => {
-  const [weekDate,     setWeekDate]     = useState(new Date())
-  const [plannings,    setPlannings]    = useState([])
-  const [pauses,       setPauses]       = useState({})
-  const [loadingPlan,  setLoadingPlan]  = useState(false)
-  const [planError,    setPlanError]    = useState(null)
-  const [activeDay,    setActiveDay]    = useState(
-    new Date().toISOString().split('T')[0]  // today
+  const [weekDate, setWeekDate] = useState(new Date())
+  const [plannings, setPlannings] = useState([])
+  const [loadingPlan, setLoadingPlan] = useState(false)
+  const [planError, setPlanError] = useState(null)
+  const [activeDay, setActiveDay] = useState(
+    new Date().toISOString().split('T')[0]
   )
 
   const {
-    days,
-    weekNum,
-    year,
-    weekLabel,
-    goToNextWeek,
-    goToPrevWeek,
-    goToCurrentWeek,
+    days, weekNum, year, weekLabel,
+    goToNextWeek, goToPrevWeek, goToCurrentWeek, isCurrentWeek,
   } = usePlanning(weekDate, setWeekDate)
 
-  // Fetch planning when week changes
   const fetchPlanning = useCallback(async (wn, yr) => {
     setLoadingPlan(true)
     setPlanError(null)
     try {
-      const res = await axiosInstance.get(API.ME.PLANNING, {
-        params: { week_number: wn, year: yr },
-      })
+      const res = await employeePlanningService.getMyPlanning({ week_number: wn, year: yr })
       setPlannings(res.data.data || [])
     } catch {
       setPlannings([])
@@ -69,68 +49,60 @@ const MyPlanningPage = () => {
     fetchPlanning(weekNum, year)
   }, [weekNum, year, fetchPlanning])
 
-  // Fetch pauses for all plannings in a single batch request
+  // Auto-refresh polling
   useEffect(() => {
-    if (!plannings.length) {
-      setPauses({})
-      return
-    }
+    if (!isCurrentWeek) return
+    const interval = setInterval(() => {
+      fetchPlanning(weekNum, year)
+    }, POLL_INTERVAL)
+    return () => clearInterval(interval)
+  }, [isCurrentWeek, weekNum, year, fetchPlanning])
 
-    const abortController = new AbortController()
-    const planningIds = plannings.map((p) => p.id)
-
-    const fetchBatch = async () => {
-      try {
-        const res = await axiosInstance.get(API.PAUSES.BATCH, {
-          params: { planning_ids: planningIds.join(',') },
-          signal: abortController.signal,
-        })
-        if (!abortController.signal.aborted) {
-          setPauses(res.data.data || {})
-        }
-      } catch (err) {
-        if (err.name !== 'CanceledError' && !abortController.signal.aborted) {
-          setPauses({})
-        }
-      }
-    }
-
-    fetchBatch()
-    return () => abortController.abort()
-  }, [plannings])
-
-  // Filter plannings for the active day
   const todayPlannings = plannings.filter((p) => p.date === activeDay)
 
-  // Get pauses for today's plannings
-  const todayPauses = todayPlannings.flatMap((p) => pauses[p.id] || [])
+  // Daily hours
+  const dailyHours = useMemo(() => {
+    return todayPlannings.reduce((total, p) => {
+      return total + (p.duration_hours || 0)
+    }, 0)
+  }, [todayPlannings])
+
+  // Weekly stats
+  const weeklyStats = useMemo(() => {
+    let totalHours = 0
+    let shiftCount = 0
+    let pastCount = 0
+    const todayStr = new Date().toISOString().split('T')[0]
+
+    plannings.forEach((p) => {
+      totalHours += p.duration_hours || 0
+      shiftCount++
+      if (p.date < todayStr) pastCount++
+    })
+
+    const overtime = Math.max(0, totalHours - 44)
+
+    return { totalHours: Math.round(totalHours * 10) / 10, shiftCount, pastCount, overtime }
+  }, [plannings])
 
   const dayTabs = useMemo(() =>
     days.map((day) => ({
-      value:  day.date,
-      label:  `${day.label} ${day.dayNum}`,
-      count:  plannings.filter((p) => p.date === day.date).length || undefined,
+      value: day.date,
+      label: `${day.label} ${day.dayNum}`,
+      count: plannings.filter((p) => p.date === day.date).length || undefined,
     })),
     [days, plannings]
   )
 
-  return (
-    <div className="flex flex-col gap-5 max-w-lg mx-auto">
+  const isToday = activeDay === new Date().toISOString().split('T')[0]
 
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-          Mon Planning
-        </h1>
-        <p className="mt-0.5 text-sm text-slate-400">
-          Votre programme de la semaine
-        </p>
+  return (
+    <div className="flex flex-col gap-5 max-w-lg mx-auto pb-8">
+      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
+        <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">Mon Planning</h1>
+        <p className="mt-0.5 text-sm text-slate-400">Votre programme de la semaine</p>
       </motion.div>
 
-      {/* Week selector */}
       <WeekSelector
         weekLabel={weekLabel}
         onPrev={goToPrevWeek}
@@ -138,7 +110,41 @@ const MyPlanningPage = () => {
         onToday={goToCurrentWeek}
       />
 
-      {/* Day tabs */}
+      {/* Weekly summary bar */}
+      {plannings.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-4 rounded-xl border border-surface-200 bg-surface-50 px-4 py-2.5
+                     dark:border-dark-600 dark:bg-dark-800"
+        >
+          <div className="flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5 text-slate-400" />
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              {formatDuration(weeklyStats.totalHours)}
+            </span>
+            <span className="text-2xs text-slate-400">/ semaine</span>
+          </div>
+          <span className="text-slate-200 dark:text-dark-500">|</span>
+          <span className="text-xs text-slate-500">
+            {weeklyStats.shiftCount} shift{weeklyStats.shiftCount > 1 ? 's' : ''}
+          </span>
+          <span className="text-slate-200 dark:text-dark-500">|</span>
+          <span className="text-xs text-slate-500">
+            {weeklyStats.pastCount} terminé{weeklyStats.pastCount > 1 ? 's' : ''}
+          </span>
+          {weeklyStats.overtime > 0 && (
+            <>
+              <span className="text-slate-200 dark:text-dark-500">|</span>
+              <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                <AlertTriangle className="h-3 w-3" />
+                {formatDuration(weeklyStats.overtime)} supp.
+              </span>
+            </>
+          )}
+        </motion.div>
+      )}
+
       <Tabs
         tabs={dayTabs}
         value={activeDay}
@@ -146,12 +152,33 @@ const MyPlanningPage = () => {
         variant="pill"
       />
 
-      {/* Error state */}
-      {planError && (
-        <ErrorState message={planError} onRetry={() => fetchPlanning(weekNum, year)} />
+      {/* Daily hours indicator */}
+      {todayPlannings.length > 0 && (
+        <div className="flex items-center justify-between px-0.5">
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            {isToday ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+            <span>
+              {todayPlannings.length} assignation{todayPlannings.length > 1 ? 's' : ''}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs">
+            <Clock className="h-3 w-3 text-slate-400" />
+            <span className="font-medium text-slate-600 dark:text-slate-300">
+              {formatDuration(dailyHours)}
+            </span>
+            <span className="text-slate-400">aujourd'hui</span>
+          </div>
+        </div>
       )}
 
-      {/* Timeline */}
+      {/* Error */}
+      {planError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-900/10">
+          <p className="text-xs text-red-600 dark:text-red-400">{planError}</p>
+        </div>
+      )}
+
+      {/* Planning cards */}
       <motion.div
         key={activeDay}
         initial={{ opacity: 0, x: 8 }}
@@ -160,31 +187,53 @@ const MyPlanningPage = () => {
       >
         {loadingPlan ? (
           <div className="space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="flex gap-4">
-                <Skeleton.Circle size="h-3 w-3 mt-3.5" />
-                <Skeleton.Block className="flex-1 h-16 rounded-xl" />
-              </div>
+            {Array.from({ length: todayPlannings.length || 2 }).map((_, i) => (
+              <Skeleton.Block key={i} className="h-24 rounded-xl" />
+            ))}
+          </div>
+        ) : todayPlannings.length > 0 ? (
+          <div className="space-y-2">
+            {todayPlannings.map((p, i) => (
+              <EmployeePlanningCard key={p.id} planning={p} index={i} />
             ))}
           </div>
         ) : (
-          <TimelineView
-            plannings={todayPlannings}
-            pauses={todayPauses}
-            selectedDate={activeDay}
+          <EmptyState
+            icon={Clock}
+            title="Aucune assignation"
+            description="Vous n'avez pas de planning pour cette journée."
+            size="sm"
           />
         )}
       </motion.div>
 
-      {/* Pause list */}
-      {todayPauses.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.1 }}
-        >
-          <EmployeePauseList pauses={todayPauses} />
-        </motion.div>
+      {/* Pause info inline */}
+      {todayPlannings.some((p) => p.pauses?.length > 0) && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/10">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Coffee className="h-3.5 w-3.5 text-amber-500" />
+            <span className="text-2xs font-semibold uppercase tracking-wider text-amber-600">Pauses</span>
+          </div>
+          {todayPlannings.map((p) =>
+            (p.pauses || []).map((pause, i) => (
+              <div key={i} className="flex items-center justify-between py-1 text-xs">
+                <span className="text-slate-600">
+                  {pause.pause_start} – {pause.pause_end}
+                </span>
+                <span className="text-slate-400">
+                  {pause.duration_minutes || '-'}min
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Auto-refresh indicator */}
+      {isCurrentWeek && plannings.length > 0 && (
+        <p className="text-center text-2xs text-slate-400">
+          Mise à jour automatique toutes les 30 secondes
+        </p>
       )}
     </div>
   )

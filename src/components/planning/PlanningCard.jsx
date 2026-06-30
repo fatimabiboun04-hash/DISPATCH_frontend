@@ -3,7 +3,7 @@ import { useDispatch } from 'react-redux'
 import { motion } from 'framer-motion'
 import {
   AlertTriangle, Lock, Clock, ChevronRight,
-  Zap, Trash2, Copy, Coffee,
+  Zap, Trash2, Copy, Coffee, ListChecks, Star,
 } from 'lucide-react'
 import ShiftBadge    from './ShiftBadge'
 import UserAvatarRow from './UserAvatarRow'
@@ -206,6 +206,19 @@ const PlanningCard = ({
           {!activePause && scheduledPause && (
             <Tooltip content={`Pause planifiée (${scheduledPause.pause_start})`}>
               <Coffee className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
+            </Tooltip>
+          )}
+          {planning.tasks_count > 0 && (
+            <Tooltip content={`${planning.tasks_count} tâche(s)`}>
+              <ListChecks className="h-3 w-3 text-brand-500 flex-shrink-0" />
+            </Tooltip>
+          )}
+          {planning.user?.latest_rating && (
+            <Tooltip content={`Note: ${planning.user.latest_rating}/5`}>
+              <div className="flex items-center gap-0.5">
+                <Star className="h-2.5 w-2.5 text-amber-400 fill-amber-400 flex-shrink-0" />
+                <span className="text-2xs text-amber-500 font-medium">{planning.user.latest_rating}</span>
+              </div>
             </Tooltip>
           )}
         </div>

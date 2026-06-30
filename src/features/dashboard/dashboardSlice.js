@@ -7,15 +7,6 @@ import {
   fetchWeeklyHistoryThunk,
 } from './dashboardThunks'
 
-/**
- * Dashboard state — matches exact backend response shapes:
- *
- * stats:         GET /v1/dashboard/stats           → { coverage, delays_today, ... }
- * liveFeed:      GET /v1/dashboard/live-feed       → array of events
- * coverage:      GET /v1/dashboard/coverage        → array of 7 day objects
- * activePauses:  GET /v1/dashboard/active-pauses   → { count, pauses[] }
- * weeklyHistory: GET /v1/dashboard/weekly-history  → array of snapshot objects
- */
 const initialState = {
   // Stats KPIs
   stats: null,
@@ -42,6 +33,28 @@ const initialState = {
   weeklyHistoryLoading: false,
   weeklyHistoryError: null,
 
+  // Charts data (from stats endpoint)
+  charts: null,
+
+  // KPI Engine data
+  kpis: null,
+
+  // Alerts data
+  alerts: null,
+
+  // Navigation
+  navigation: null,
+
+  // Quick actions
+  quickActions: null,
+
+  // Cards data
+  cards: null,
+
+  // Current week/year
+  currentWeek: null,
+  currentYear: null,
+
   // Timestamp of last full refresh
   lastRefreshed: null,
 }
@@ -53,9 +66,10 @@ const dashboardSlice = createSlice({
     setLastRefreshed: (state) => {
       state.lastRefreshed = new Date().toISOString()
     },
+    clearState: () => initialState,
   },
-  extraReducers: (builder) => {
 
+  extraReducers: (builder) => {
     // ── Stats ───────────────────────────────────────────────
     builder
       .addCase(fetchStatsThunk.pending, (state) => {
@@ -65,6 +79,16 @@ const dashboardSlice = createSlice({
       .addCase(fetchStatsThunk.fulfilled, (state, action) => {
         state.statsLoading = false
         state.stats        = action.payload
+
+        // Extract chart data
+        state.charts = action.payload?.charts ?? null
+        state.kpis   = action.payload?.kpis   ?? null
+        state.alerts = action.payload?.alerts ?? null
+        state.navigation = action.payload?.navigation ?? null
+        state.quickActions = action.payload?.quick_actions ?? null
+        state.cards = action.payload?.cards ?? null
+        state.currentWeek = action.payload?.current_week ?? null
+        state.currentYear = action.payload?.current_year ?? null
       })
       .addCase(fetchStatsThunk.rejected, (state, action) => {
         state.statsLoading = false
@@ -133,5 +157,5 @@ const dashboardSlice = createSlice({
   },
 })
 
-export const { setLastRefreshed } = dashboardSlice.actions
+export const { setLastRefreshed, clearState } = dashboardSlice.actions
 export default dashboardSlice.reducer

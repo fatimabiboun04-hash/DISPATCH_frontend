@@ -4,8 +4,9 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion, AnimatePresence } from 'framer-motion'
-import { AlertTriangle, XCircle, ArrowRight } from 'lucide-react'
+import { AlertTriangle, XCircle, ArrowRight, ListChecks, ChevronDown } from 'lucide-react'
 import { createPlanningThunk } from '../../features/planning/planningThunks'
+import { createTaskThunk } from '../../features/tasks/taskThunks'
 import {
   selectPlanningSubmitting,
   selectConflictErrors,
@@ -24,11 +25,21 @@ import { cn } from '../../utils/cn'
 import planningService from '../../services/planningService'
 import toast from 'react-hot-toast'
 
+const PRIORITY_OPTIONS = [
+  { value: 'low', label: 'Basse' },
+  { value: 'medium', label: 'Moyenne' },
+  { value: 'high', label: 'Haute' },
+  { value: 'urgent', label: 'Urgente' },
+]
+
 const schema = z.object({
   user_id:  z.number().min(1, 'Sélectionnez un employé'),
   shift_id: z.number().min(1, 'Sélectionnez un shift'),
   team_id:  z.string().optional(),
   notes:    z.string().optional(),
+  task_title: z.string().optional(),
+  task_description: z.string().optional(),
+  task_priority: z.string().optional(),
 })
 
 const QuickAddPlanningModal = ({
@@ -52,6 +63,7 @@ const QuickAddPlanningModal = ({
 
   const [liveConflicts, setLiveConflicts] = useState([])
   const [validating, setValidating] = useState(false)
+  const [showTaskFields, setShowTaskFields] = useState(false)
   const debounceRef = useRef(null)
 
   const {
@@ -104,8 +116,12 @@ const QuickAddPlanningModal = ({
         shift_id: undefined,
         team_id:  defaultTeamId ? String(defaultTeamId) : '',
         notes:    '',
+        task_title: '',
+        task_description: '',
+        task_priority: 'medium',
       })
       setLiveConflicts([])
+      setShowTaskFields(false)
     }
   }, [open, dispatch, reset, defaultTeamId])
 
@@ -119,7 +135,25 @@ const QuickAddPlanningModal = ({
     }
     const result = await dispatch(createPlanningThunk(payload))
     if (createPlanningThunk.fulfilled.match(result)) {
+      const planning = result.payload
       toast.success('Assignation créée')
+
+      // Optional: create task linked to the planning
+      if (showTaskFields && formData.task_title?.trim()) {
+        const taskPayload = {
+          user_id: Number(formData.user_id),
+          planning_id: planning.id,
+          title: formData.task_title.trim(),
+          description: formData.task_description?.trim() || undefined,
+          priority: formData.task_priority || 'medium',
+          due_date: date,
+        }
+        const taskResult = await dispatch(createTaskThunk(taskPayload))
+        if (createTaskThunk.fulfilled.match(taskResult)) {
+          toast.success('Tâche créée')
+        }
+      }
+
       onSuccess?.()
       onClose()
     }
@@ -297,6 +331,49 @@ const QuickAddPlanningModal = ({
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Collapsible task section */}
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowTaskFields((v) => !v)}
+            className="flex w-full items-center gap-2 rounded-lg border border-dashed border-slate-200 px-3 py-2
+                       text-xs font-medium text-slate-500 hover:border-brand-300 hover:text-brand-500
+                       hover:bg-brand-50 transition-all duration-100
+                       dark:border-dark-500 dark:text-slate-400 dark:hover:border-brand-600 dark:hover:bg-brand-900/10"
+          >
+            <ListChecks className="h-3.5 w-3.5" />
+            <span>{showTaskFields ? 'Masquer la tâche' : 'Ajouter une tâche associée'}</span>
+            <ChevronDown className={cn('ml-auto h-3 w-3 transition-transform', showTaskFields && 'rotate-180')} />
+          </button>
+
+          <AnimatePresence>
+            {showTaskFields && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="space-y-3 overflow-hidden pt-3"
+              >
+                <Input
+                  label="Titre de la tâche"
+                  placeholder="Intitulé de la tâche"
+                  {...register('task_title')}
+                />
+                <Input
+                  label="Description"
+                  placeholder="Détails supplémentaires…"
+                  {...register('task_description')}
+                />
+                <Select
+                  label="Priorité"
+                  options={PRIORITY_OPTIONS}
+                  {...register('task_priority')}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
         <div className="space-y-1">
           {defaultTeamId && (() => {

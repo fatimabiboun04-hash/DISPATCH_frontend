@@ -70,7 +70,7 @@ const EmployeeProfilePage = () => {
   const [leaveLoading, setLeaveLoading] = useState(false)
   const [pauseData, setPauseData] = useState([])
   const [pauseLoading, setPauseLoading] = useState(false)
-  const [profileStats] = useState(null)
+  const profileStats = employee?.stats || null
   const [teams, setTeams] = useState([])
   const [skills, setSkills] = useState([])
 
@@ -209,11 +209,7 @@ const EmployeeProfilePage = () => {
 
       {/* Stats cards */}
       <ProfileStatsCards
-        stats={profileStats || {
-          weekly_hours: 0, weekly_limit: employee.weekly_hours_limit || 44,
-          hours_state: 'green', is_overtime: false, is_under_hours: false,
-          monthly_hours: 0, current_week: 1,
-        }}
+        stats={profileStats}
         currentRating={currentRating}
       />
 

@@ -5,6 +5,8 @@ import { Coffee, Plus, ChevronDown, ChevronUp } from 'lucide-react'
 import {
   fetchPausesByPlanningThunk,
   deletePauseThunk,
+  cancelPauseThunk,
+  completePauseThunk,
 } from '../../features/pauses/pauseThunks'
 import {
   selectPausesByPlanningId,
@@ -37,6 +39,10 @@ const PauseLayer = ({ planningId, planning, isLocked = false }) => {
   const [formOpen,      setFormOpen]      = useState(false)
   const [deleteTarget,  setDeleteTarget]  = useState(null)
   const [deleting,      setDeleting]      = useState(false)
+  const [cancelTarget,  setCancelTarget]  = useState(null)
+  const [cancelling,    setCancelling]    = useState(false)
+  const [completeTarget, setCompleteTarget] = useState(null)
+  const [completing,    setCompleting]    = useState(false)
 
   const users = planning?.user ? [planning.user] : []
   const teams = planning?.team ? [planning.team] : []
@@ -54,6 +60,38 @@ const PauseLayer = ({ planningId, planning, isLocked = false }) => {
       setDeleteTarget(null)
     } else {
       toast.error('Erreur lors de la suppression')
+    }
+  }
+
+  const handleCancelConfirm = async () => {
+    if (!cancelTarget) return
+    setCancelling(true)
+    const result = await dispatch(cancelPauseThunk({
+      pauseId: cancelTarget.id,
+      planningId,
+    }))
+    setCancelling(false)
+    if (cancelPauseThunk.fulfilled.match(result)) {
+      toast.success('Pause annulée')
+      setCancelTarget(null)
+    } else {
+      toast.error("Erreur lors de l'annulation")
+    }
+  }
+
+  const handleCompleteConfirm = async () => {
+    if (!completeTarget) return
+    setCompleting(true)
+    const result = await dispatch(completePauseThunk({
+      pauseId: completeTarget.id,
+      planningId,
+    }))
+    setCompleting(false)
+    if (completePauseThunk.fulfilled.match(result)) {
+      toast.success('Pause terminée')
+      setCompleteTarget(null)
+    } else {
+      toast.error('Erreur lors de la fin de pause')
     }
   }
 
@@ -135,6 +173,8 @@ const PauseLayer = ({ planningId, planning, isLocked = false }) => {
                         setFormOpen(true)
                       }}
                       onDelete={setDeleteTarget}
+                      onCancel={setCancelTarget}
+                      onComplete={setCompleteTarget}
                     />
                   ))
                 )}
@@ -174,6 +214,28 @@ const PauseLayer = ({ planningId, planning, isLocked = false }) => {
         title="Supprimer la pause"
         description="Supprimer cette pause ?"
         confirmLabel="Supprimer"
+      />
+
+      {/* Cancel confirmation */}
+      <ConfirmDialog
+        open={!!cancelTarget}
+        onClose={() => setCancelTarget(null)}
+        onConfirm={handleCancelConfirm}
+        loading={cancelling}
+        title="Annuler la pause"
+        description="Annuler cette pause ?"
+        confirmLabel="Annuler"
+      />
+
+      {/* Complete confirmation */}
+      <ConfirmDialog
+        open={!!completeTarget}
+        onClose={() => setCompleteTarget(null)}
+        onConfirm={handleCompleteConfirm}
+        loading={completing}
+        title="Terminer la pause"
+        description="Terminer cette pause ?"
+        confirmLabel="Terminer"
       />
     </>
   )

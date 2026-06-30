@@ -3,9 +3,9 @@ import dashboardService from '../../services/dashboardService'
 
 export const fetchStatsThunk = createAsyncThunk(
   'dashboard/fetchStats',
-  async (_, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
-      return await dashboardService.getStats()
+      return await dashboardService.getStats(params)
     } catch (err) {
       return rejectWithValue(err.message || 'Failed to load stats')
     }
@@ -25,9 +25,9 @@ export const fetchLiveFeedThunk = createAsyncThunk(
 
 export const fetchCoverageThunk = createAsyncThunk(
   'dashboard/fetchCoverage',
-  async (_, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
-      return await dashboardService.getCoverage()
+      return await dashboardService.getCoverage(params)
     } catch (err) {
       return rejectWithValue(err.message || 'Failed to load coverage')
     }

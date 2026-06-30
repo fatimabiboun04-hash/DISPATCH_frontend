@@ -75,6 +75,12 @@ const EmployeesPage = () => {
     if (deleteEmployeeThunk.fulfilled.match(result)) {
       toast.success(`${deleteTarget.name} supprimé`)
       setDeleteTarget(null)
+      dispatch(fetchEmployeesThunk({
+        search: filters.search,
+        team_id: filters.team_id,
+        status: filters.status,
+        page: filters.page,
+      }))
     } else {
       toast.error('Erreur lors de la suppression')
     }
